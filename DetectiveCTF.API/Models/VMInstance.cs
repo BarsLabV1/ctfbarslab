@@ -1,0 +1,20 @@
+namespace DetectiveCTF.API.Models;
+
+public class VMInstance
+{
+    public int Id { get; set; }
+    public int ChallengeId { get; set; }
+    public int? UserId { get; set; }
+    public int? TeamId { get; set; }
+    public string ContainerId { get; set; } = string.Empty;
+    public string ContainerName { get; set; } = string.Empty;
+    public string IPAddress { get; set; } = string.Empty;
+    public int Port { get; set; }
+    public string Status { get; set; } = "running"; // running, stopped, error
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? ExpiresAt { get; set; }
+    
+    public Challenge Challenge { get; set; } = null!;
+    public User? User { get; set; }
+    public Team? Team { get; set; }
+}

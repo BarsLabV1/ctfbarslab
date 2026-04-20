@@ -1,0 +1,123 @@
+.leaderboard-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.leaderboard-header h1 {
+  font-size: 48px;
+  margin-bottom: 10px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.leaderboard-header p {
+  color: #888;
+  font-size: 18px;
+}
+
+.leaderboard-table {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  overflow: hidden;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.table-header {
+  display: grid;
+  grid-template-columns: 100px 1fr 200px 200px;
+  gap: 20px;
+  padding: 20px;
+  background: rgba(102, 126, 234, 0.2);
+  font-weight: bold;
+  color: #667eea;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.table-row {
+  display: grid;
+  grid-template-columns: 100px 1fr 200px 200px;
+  gap: 20px;
+  padding: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+}
+
+.table-row:hover {
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.table-row:last-child {
+  border-bottom: none;
+}
+
+.top-three {
+  background: rgba(255, 215, 0, 0.05);
+}
+
+.col-rank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rank-badge {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.col-username {
+  display: flex;
+  align-items: center;
+}
+
+.username-text {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.col-cases {
+  display: flex;
+  align-items: center;
+  color: #888;
+}
+
+.col-score {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.score-value {
+  color: #ffd700;
+  font-weight: bold;
+  font-size: 18px;
+}
+
+@media (max-width: 768px) {
+  .table-header,
+  .table-row {
+    grid-template-columns: 60px 1fr 80px;
+    gap: 10px;
+  }
+
+  .col-cases {
+    display: none;
+  }
+
+  .rank-badge {
+    font-size: 18px;
+  }
+
+  .username-text {
+    font-size: 16px;
+  }
+
+  .score-value {
+    font-size: 16px;
+  }
+}
