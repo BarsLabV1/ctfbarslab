@@ -1,91 +1,41 @@
 version: '3.8'
 
 services:
-  # SSH Challenge Server
-  ssh-server:
-    image: linuxserver/openssh-server:latest
-    container_name: ctf-ssh-server
+  # Backend - ASP.NET Core API
+  backend:
+    build:
+      context: ./DetectiveCTF.API
+      dockerfile: Dockerfile
+    container_name: detective-backend
+    ports:
+      - "5001:5001"
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/Istanbul
-      - USER_NAME=admin
-      - USER_PASSWORD=P@ssw0rd123
-      - SUDO_ACCESS=true
-    ports:
-      - "2222:2222"
+      - ASPNETCORE_URLS=http://0.0.0.0:5001
+      - ConnectionStrings__DefaultConnection=Data Source=/app/data/detectivectf.db
     volumes:
-      - ./challenges/ssh-data:/config
-    restart: unless-stopped
+      - ./DetectiveCTF.API/data:/app/data
+      - ./DetectiveCTF.API/wwwroot/uploads:/app/wwwroot/uploads
+      - /var/run/docker.sock:/var/run/docker.sock  # Docker-in-Docker için
     networks:
       - ctf-network
+    restart: unless-stopped
 
-  # FTP Challenge Server
-  ftp-server:
-    image: fauria/vsftpd:latest
-    container_name: ctf-ftp-server
+  # Frontend - React
+  frontend:
+    build:
+      context: ./detective-ctf-frontend
+      dockerfile: Dockerfile
+    container_name: detective-frontend
+    ports:
+      - "3000:80"
     environment:
-      - FTP_USER=ftpuser
-      - FTP_PASS=ftppass123
-      - PASV_ADDRESS=127.0.0.1
-    ports:
-      - "21:21"
-      - "21100-21110:21100-21110"
-    volumes:
-      - ./challenges/ftp-data:/home/vsftpd
-    restart: unless-stopped
+      - REACT_APP_API_URL=http://localhost:5001/api
+    depends_on:
+      - backend
     networks:
       - ctf-network
-
-  # Web Challenge - Vulnerable Web App
-  web-challenge:
-    image: vulnerables/web-dvwa:latest
-    container_name: ctf-web-challenge
-    ports:
-      - "8080:80"
     restart: unless-stopped
-    networks:
-      - ctf-network
-
-  # Kali Linux for Advanced Challenges
-  kali-linux:
-    image: kalilinux/kali-rolling:latest
-    container_name: ctf-kali
-    tty: true
-    stdin_open: true
-    ports:
-      - "2223:22"
-    volumes:
-      - ./challenges/kali-data:/root
-    command: /bin/bash
-    restart: unless-stopped
-    networks:
-      - ctf-network
-
-  # MySQL Database for Challenges
-  mysql-challenge:
-    image: mysql:8.0
-    container_name: ctf-mysql
-    environment:
-      - MYSQL_ROOT_PASSWORD=rootpass123
-      - MYSQL_DATABASE=ctf_db
-      - MYSQL_USER=ctfuser
-      - MYSQL_PASSWORD=ctfpass123
-    ports:
-      - "3306:3306"
-    volumes:
-      - ./challenges/mysql-data:/var/lib/mysql
-      - ./challenges/mysql-init:/docker-entrypoint-initdb.d
-    restart: unless-stopped
-    networks:
-      - ctf-network
 
 networks:
   ctf-network:
     driver: bridge
-
-volumes:
-  ssh-data:
-  ftp-data:
-  kali-data:
-  mysql-data:
