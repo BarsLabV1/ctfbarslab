@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import * as signalR from '@microsoft/signalr';
+import CrimeSceneReport from './CrimeSceneReport';
 import './EvidenceBoard.css';
 
 const NOTE_COLORS    = ['#fef9e7','#e8f5e9','#fff3e0','#fce4ec','#e3f2fd','#f3e5f5'];
@@ -11,12 +12,13 @@ let nextId = Date.now();
 const uid  = () => String(++nextId);
 
 /* ══════════════════════════════════════════ */
-const EvidenceBoard = ({ caseId, clues = [], autoItems = [], onUnlock, processedIds }) => {
+const EvidenceBoard = ({ caseId, caseData, clues = [], autoItems = [], onUnlock, processedIds }) => {
   const boardRef   = useRef(null);
   const hubRef     = useRef(null);
   const isSyncing  = useRef(false);
   const localProcessedIds = useRef(new Set());
   const processedAutoIds = processedIds || localProcessedIds;
+  const initialNotesAdded = useRef(false);
 
   const [connected, setConnected] = useState(false);
   const [notes,     setNotes]     = useState(() =>
@@ -29,6 +31,11 @@ const EvidenceBoard = ({ caseId, clues = [], autoItems = [], onUnlock, processed
   );
   const [strings,  setStrings]  = useState([]);
   const [suspects, setSuspects] = useState([]);
+  const [viewNote, setViewNote] = useState(null); // popup için
+  const [viewSuspect, setViewSuspect] = useState(null);
+  const [viewReport, setViewReport] = useState(false);
+  const [reportPos, setReportPos] = useState({ x: 520, y: 40 });
+  const REPORT_ID = `report_${caseId}`;
 
   const [dragging,        setDragging]        = useState(null);
   const [connecting,      setConnecting]      = useState(null);
@@ -110,6 +117,27 @@ const EvidenceBoard = ({ caseId, clues = [], autoItems = [], onUnlock, processed
           return [...(state.suspects || []), ...autoOnly];
         });
       } catch {}
+
+      // Başlangıç notlarını ekle (sadece bir kez)
+      if (!initialNotesAdded.current && caseData) {
+        initialNotesAdded.current = true;
+        const startNotes = [
+          { id: `init_case_${caseId}`, _auto: true, x: 40, y: 40,
+            title: '📋 ' + caseData.title,
+            text: caseData.story || caseData.description || '',
+            color: '#fef9e7', rotation: -1 },
+          { id: `init_report_${caseId}`, _auto: true, x: 290, y: 55,
+            title: '📄 Olay Yeri Raporu',
+            text: `Zorluk: ${caseData.difficulty}/5\nToplam Puan: ${caseData.totalPoints}\nSoru Sayısı: ${caseData.challengeCount || 0}\n\nSorular çözüldükçe yeni belgeler açılacak.`,
+            color: '#e3f2fd', rotation: 2 },
+        ];
+        setNotes(prev => {
+          const existIds = new Set(prev.map(n => n.id));
+          const toAdd = startNotes.filter(n => !existIds.has(n.id));
+          if (toAdd.length === 0) return prev;
+          return [...prev, ...toAdd];
+        });
+      }
     });
 
     hub.on('BoardUpdated', (json) => {
@@ -150,19 +178,25 @@ const EvidenceBoard = ({ caseId, clues = [], autoItems = [], onUnlock, processed
   const startDrag = useCallback((e, id, type) => {
     e.preventDefault();
     const board = boardRef.current.getBoundingClientRect();
+    if (type === 'report') {
+      setDragging({ id, type: 'report', ox: e.clientX - board.left - reportPos.x, oy: e.clientY - board.top - reportPos.y });
+      return;
+    }
     const item  = type === 'note'
       ? notes.find(n => n.id === id)
       : suspects.find(s => s.id === id);
     if (!item) return;
     setDragging({ id, type, ox: e.clientX - board.left - item.x, oy: e.clientY - board.top - item.y });
-  }, [notes, suspects]);
+  }, [notes, suspects, reportPos]);
 
   const onMouseMove = useCallback((e) => {
     if (!dragging) return;
     const board = boardRef.current.getBoundingClientRect();
     const x = e.clientX - board.left - dragging.ox;
     const y = e.clientY - board.top  - dragging.oy;
-    if (dragging.type === 'note') {
+    if (dragging.type === 'report') {
+      setReportPos({ x, y });
+    } else if (dragging.type === 'note') {
       setNotes(ns => { const u = ns.map(n => n.id === dragging.id ? {...n,x,y} : n); return u; });
     } else {
       setSuspects(ss => { const u = ss.map(s => s.id === dragging.id ? {...s,x,y} : s); return u; });
@@ -258,6 +292,7 @@ const EvidenceBoard = ({ caseId, clues = [], autoItems = [], onUnlock, processed
 
   /* ── center of item for string drawing ── */
   const center = (id) => {
+    if (id === REPORT_ID) return { x: reportPos.x + 80, y: reportPos.y + 80 };
     const n = notes.find(n => n.id === id) || suspects.find(s => s.id === id);
     return n ? { x: n.x+95, y: n.y+65 } : { x:0, y:0 };
   };
@@ -302,16 +337,40 @@ const EvidenceBoard = ({ caseId, clues = [], autoItems = [], onUnlock, processed
           })}
         </svg>
 
+        {/* ── Özel: Olay Yeri Raporu kartı ── */}
+        {caseData && (
+          <div
+            className={`eb-report-card ${connecting===REPORT_ID?'connecting':''} ${connecting!==null&&connecting!==REPORT_ID?'connectable':''}`}
+            style={{ left: reportPos.x, top: reportPos.y }}
+            onMouseDown={e => startDrag(e, REPORT_ID, 'report')}
+            onClick={e => handleItemClick(e, REPORT_ID)}
+            onDoubleClick={e => { e.stopPropagation(); setViewReport(true); }}
+          >
+            <div className="eb-report-pin"/>
+            <div className="eb-report-stamp">GİZLİ</div>
+            <div className="eb-report-badge">🛡️</div>
+            <div className="eb-report-title">OLAY YERİ<br/>İNCELEME RAPORU</div>
+            <div className="eb-report-case">Vaka #{String(caseData.id).padStart(4,'0')}</div>
+            <div className="eb-report-hint">Çift tıkla → Tam raporu gör</div>
+            <div className="eb-note-btns">
+              <button onClick={e=>{e.stopPropagation();setViewReport(true);}} title="Görüntüle">👁️</button>
+              <button onClick={e=>{e.stopPropagation();handleItemClick(e,REPORT_ID);}} title="İp bağla">🔗</button>
+            </div>
+          </div>
+        )}
+
         {notes.map(n => (
           <div key={n.id}
             className={`eb-note ${connecting===n.id?'connecting':''} ${connecting!==null&&connecting!==n.id?'connectable':''}`}
             style={{ left:n.x, top:n.y, background:n.color, transform:`rotate(${n.rotation}deg)` }}
             onMouseDown={e => startDrag(e, n.id, 'note')}
-            onClick={e => handleItemClick(e, n.id)}>
+            onClick={e => handleItemClick(e, n.id)}
+            onDoubleClick={e => { e.stopPropagation(); setViewNote(n); }}>
             <div className="eb-pin"/>
             <div className="eb-note-title">{n.title}</div>
             <div className="eb-note-text">{n.text}</div>
             <div className="eb-note-btns">
+              <button onClick={e=>{e.stopPropagation();setViewNote(n);}} title="Görüntüle">👁️</button>
               <button onClick={e=>{e.stopPropagation();setEditNote(n);}}>✏️</button>
               <button onClick={e=>{e.stopPropagation();removeNote(n.id);}}>🗑</button>
               <button onClick={e=>{e.stopPropagation();handleItemClick(e,n.id);}} title="İp bağla">🔗</button>
@@ -324,13 +383,15 @@ const EvidenceBoard = ({ caseId, clues = [], autoItems = [], onUnlock, processed
             className={`eb-suspect ${connecting===s.id?'connecting':''} ${connecting!==null&&connecting!==s.id?'connectable':''}`}
             style={{ left:s.x, top:s.y }}
             onMouseDown={e => startDrag(e, s.id, 'suspect')}
-            onClick={e => handleItemClick(e, s.id)}>
+            onClick={e => handleItemClick(e, s.id)}
+            onDoubleClick={e => { e.stopPropagation(); setViewSuspect(s); }}>
             <div className="eb-suspect-pin"/>
             <div className="eb-suspect-avatar">{s.name.charAt(0).toUpperCase()}</div>
             <div className="eb-suspect-name">{s.name}</div>
             {s.role   && <div className="eb-suspect-role">{s.role}</div>}
             {s.motive && <div className="eb-suspect-motive">Motif: {s.motive}</div>}
             <div className="eb-note-btns">
+              <button onClick={e=>{e.stopPropagation();setViewSuspect(s);}} title="Görüntüle">👁️</button>
               <button onClick={e=>{e.stopPropagation();setEditSuspect(s);}}>✏️</button>
               <button onClick={e=>{e.stopPropagation();removeSuspect(s.id);}}>🗑</button>
               <button onClick={e=>{e.stopPropagation();handleItemClick(e,s.id);}} title="İp bağla">🔗</button>
@@ -398,6 +459,41 @@ const EvidenceBoard = ({ caseId, clues = [], autoItems = [], onUnlock, processed
               <button className="eb-btn-primary" onClick={saveEditSuspect}>Kaydet</button>
               <button className="eb-btn-sec" onClick={()=>setEditSuspect(null)}>İptal</button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* ── View Report Popup ── */}
+      {viewReport && caseData && (
+        <div className="eb-overlay eb-report-overlay" onClick={() => setViewReport(false)}>
+          <div className="eb-report-popup" onClick={e => e.stopPropagation()}>
+            <button className="eb-report-popup-close" onClick={() => setViewReport(false)}>✕ Kapat</button>
+            <CrimeSceneReport caseData={caseData} unlockedSections={[]} />
+          </div>
+        </div>
+      )}
+
+      {/* ── View Note Popup ── */}
+      {viewNote && (
+        <div className="eb-overlay" onClick={() => setViewNote(null)}>
+          <div className="eb-view-modal" style={{ background: viewNote.color }} onClick={e => e.stopPropagation()}>
+            <div className="eb-pin eb-view-pin"/>
+            <button className="eb-view-close" onClick={() => setViewNote(null)}>✕</button>
+            <div className="eb-view-title">{viewNote.title}</div>
+            <div className="eb-view-text">{viewNote.text}</div>
+          </div>
+        </div>
+      )}
+
+      {/* ── View Suspect Popup ── */}
+      {viewSuspect && (
+        <div className="eb-overlay" onClick={() => setViewSuspect(null)}>
+          <div className="eb-view-suspect-modal" onClick={e => e.stopPropagation()}>
+            <button className="eb-view-close" onClick={() => setViewSuspect(null)}>✕</button>
+            <div className="eb-suspect-pin eb-view-pin"/>
+            <div className="eb-view-suspect-avatar">{viewSuspect.name.charAt(0).toUpperCase()}</div>
+            <div className="eb-view-suspect-name">{viewSuspect.name}</div>
+            {viewSuspect.role   && <div className="eb-view-suspect-role">{viewSuspect.role}</div>}
+            {viewSuspect.motive && <div className="eb-view-suspect-motive">⚠️ Motif: {viewSuspect.motive}</div>}
           </div>
         </div>
       )}

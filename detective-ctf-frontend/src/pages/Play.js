@@ -2,8 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api, { casesAPI } from '../services/api';
 import { useToast } from '../hooks/useToast';
-import CrimeSceneReport from '../components/CrimeSceneReport';
-import EvidenceBoard from '../components/EvidenceBoard';
+import DetectiveBoard from '../components/DetectiveBoard';
 import './Play.css';
 
 const CATEGORY_ICONS = {
@@ -450,22 +449,13 @@ const QuestionCard = ({ challenge, index, onSolved, onUnlock }) => {
    Main Play page
 ══════════════════════════════════════════ */
 const Play = () => {
-  const { caseId }    = useParams();
-  const navigate      = useNavigate();
-  const [tab, setTab] = useState('scenario');
-  const [caseData, setCaseData]             = useState(null);
-  const [challenges, setChallenges]         = useState([]);
-  const [loading, setLoading]               = useState(true);
-  const [unlockedSections, setUnlockedSections] = useState([]); // rapor bölümleri
-  const [boardAutoItems, setBoardAutoItems]     = useState([]); // panoya otomatik eklenenler
-  const [unlockToasts, setUnlockToasts]         = useState([]); // kenar bildirimleri
-  const processedAutoIds = useRef(new Set());   // Play seviyesinde tut — mount/unmount'tan etkilenmesin
+  const { caseId } = useParams();
+  const navigate   = useNavigate();
 
-  const showUnlockToast = useCallback((data) => {
-    const id = Date.now() + Math.random();
-    setUnlockToasts(prev => [...prev, { id, ...data }]);
-    setTimeout(() => setUnlockToasts(prev => prev.filter(t => t.id !== id)), 7000);
-  }, []);
+  const [caseData,    setCaseData]    = useState(null);
+  const [challenges,  setChallenges]  = useState([]);
+  const [loading,     setLoading]     = useState(true);
+  const [unlockedSections, setUnlockedSections] = useState([]);
 
   const fetchAll = useCallback(async () => {
     try {
@@ -475,70 +465,20 @@ const Play = () => {
       ]);
       setCaseData(caseRes.data);
       setChallenges(chalRes.data);
-    } catch {
-      // handled below
-    } finally {
-      setLoading(false);
-    }
+    } catch {}
+    finally { setLoading(false); }
   }, [caseId]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  const handleUnlock = useCallback((content, challengeTitle) => {
-    console.log('handleUnlock called:', content, challengeTitle); // debug
-    if (content.reportSection) {
-      setUnlockedSections(prev => [...prev, {
-        ...content.reportSection,
-        solvedAt: new Date().toLocaleString('tr-TR'),
-        challengeTitle,
-      }]);
-      showUnlockToast({
-        icon: '📄',
-        title: 'Yeni Belge Açıldı!',
-        desc: content.reportSection.title,
-        action: () => setTab('report'),
-        actionLabel: 'Görüntüle',
-        color: '#34d399',
-      });
-    }
-    if (content.boardNote) {
-      setBoardAutoItems(prev => {
-        const id = `auto_note_${Date.now()}`;
-        return [...prev, { type:'note', ...content.boardNote, id }];
-      });
-      showUnlockToast({
-        icon: '🔍',
-        title: 'Panoya Not Eklendi!',
-        desc: content.boardNote.title,
-        action: () => setTab('board'),
-        actionLabel: 'Panoya Git',
-        color: '#60a5fa',
-      });
-    }
-    if (content.boardSuspect) {
-      setBoardAutoItems(prev => {
-        const id = `auto_suspect_${Date.now()}`;
-        return [...prev, { type:'suspect', ...content.boardSuspect, id }];
-      });
-      showUnlockToast({
-        icon: '🚨',
-        title: 'Yeni Şüpheli!',
-        desc: content.boardSuspect.name,
-        action: () => setTab('board'),
-        actionLabel: 'Panoya Git',
-        color: '#f87171',
-      });
-    }
-  }, []); // eslint-disable-line
-
   if (loading) return <div className="loading">Yükleniyor...</div>;
   if (!caseData) return <div className="error-message">Senaryo bulunamadı</div>;
 
-  const solved  = challenges.filter(c => c.isSolved).length;
-  const total   = challenges.length;
+  const solved = challenges.filter(c => c.isSolved).length;
+  const total  = challenges.length;
 
   return (
-    <div className="play-page">
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
       {/* Top bar */}
       <div className="play-topbar">
         <button onClick={() => navigate(`/cases/${caseId}`)} className="btn btn-secondary btn-small">
@@ -553,114 +493,23 @@ const Play = () => {
         </div>
       </div>
 
-      {/* Tab nav */}
-      <div className="play-tabs">
-        <button className={`play-tab ${tab === 'scenario' ? 'active' : ''}`} onClick={() => setTab('scenario')}>
-          🕵️ Senaryo
-        </button>
-        <button className={`play-tab ${tab === 'report' ? 'active' : ''}`} onClick={() => setTab('report')}>
-          📄 Olay Yeri Raporu
-        </button>
-        <button className={`play-tab ${tab === 'board' ? 'active' : ''}`} onClick={() => setTab('board')}>
-          🔍 Dedektif Panosu
-        </button>
-        <button className={`play-tab ${tab === 'questions' ? 'active' : ''}`} onClick={() => setTab('questions')}>
-          🎯 Sorular
-          {total > 0 && <span className="tab-badge">{solved}/{total}</span>}
-        </button>
-      </div>
-
-      {/* Content */}
-      <div className="play-content container">
-
-        {tab === 'scenario' && (
-          <div className="scenario-tab">
-            <div className="scenario-story-card">
-              <h2>📖 Senaryo</h2>
-              <p>{caseData.story || caseData.description}</p>
-            </div>
-            <div className="scenario-meta">
-              <div className="meta-stat">
-                <span className="stat-label">Zorluk</span>
-                <span className="stat-val">{'⭐'.repeat(caseData.difficulty)}</span>
-              </div>
-              <div className="meta-stat">
-                <span className="stat-label">Toplam Puan</span>
-                <span className="stat-val">⭐ {caseData.totalPoints}</span>
-              </div>
-              <div className="meta-stat">
-                <span className="stat-label">Sorular</span>
-                <span className="stat-val">🎯 {total}</span>
-              </div>
-              <div className="meta-stat">
-                <span className="stat-label">İlerleme</span>
-                <span className="stat-val">{solved}/{total}</span>
-              </div>
-            </div>
-            <button className="btn btn-primary btn-large" onClick={() => setTab('questions')}>
-              🎯 Sorulara Geç →
-            </button>
-          </div>
-        )}
-
-        {tab === 'report' && <CrimeSceneReport caseData={caseData} unlockedSections={unlockedSections} />}
-
-        {/* EvidenceBoard her zaman mount edilsin — sadece gizle/göster */}
-        <div style={{ display: tab === 'board' ? 'block' : 'none' }}>
-          <EvidenceBoard caseId={parseInt(caseId)} clues={caseData.availableClues || []} autoItems={boardAutoItems} onUnlock={handleUnlock} processedIds={processedAutoIds} />
-        </div>
-
-        {tab === 'questions' && (
-          <div className="questions-tab">
-            <div className="questions-layout">
-              {/* Sol: Sorular */}
-              <div className="questions-main">
-                <div className="questions-header">
-                  <h2>🎯 Sorular</h2>
-                  <p>Sırayla çöz — bir soruyu çözmeden sonraki açılmaz</p>
-                </div>
-                <div className="questions-list">
-                  {challenges.map((ch, i) => (
-                    <QuestionCard
-                      key={ch.id}
-                      challenge={ch}
-                      index={i}
-                      onSolved={fetchAll}
-                      onUnlock={handleUnlock}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Sağ: VM paneli — her zaman görünür */}
-              <div className="vm-sidebar">
-                <div className="vm-sidebar-header">🖥️ Sanal Makine</div>
-                <VMSidebarCard caseId={parseInt(caseId)} onRefresh={fetchAll} challenges={challenges} />
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ── Unlock bildirimleri — sağ alt köşe ── */}
-      <div className="unlock-toast-stack">
-        {unlockToasts.map(t => (
-          <div key={t.id} className="unlock-toast" style={{ borderLeftColor: t.color }}>
-            <span className="unlock-toast-icon">{t.icon}</span>
-            <div className="unlock-toast-body">
-              <div className="unlock-toast-title">{t.title}</div>
-              <div className="unlock-toast-desc">{t.desc}</div>
-            </div>
-            <button
-              className="unlock-toast-action"
-              style={{ color: t.color, borderColor: t.color }}
-              onClick={() => { t.action(); setUnlockToasts(prev => prev.filter(x => x.id !== t.id)); }}
-            >
-              {t.actionLabel} →
-            </button>
-          </div>
-        ))}
-      </div>
+      {/* Dedektif Panosu — tam ekran */}
+      <DetectiveBoard
+        caseId={parseInt(caseId)}
+        caseData={caseData}
+        challenges={challenges}
+        unlockedSections={unlockedSections}
+        onChallengesSolved={fetchAll}
+        onUnlock={(content, challengeTitle) => {
+          if (content.reportSection) {
+            setUnlockedSections(prev => [...prev, {
+              ...content.reportSection,
+              solvedAt: new Date().toLocaleString('tr-TR'),
+              challengeTitle,
+            }]);
+          }
+        }}
+      />
     </div>
   );
 };

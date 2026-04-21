@@ -166,7 +166,7 @@ public class DockerService
             if (string.IsNullOrEmpty(containerId) || containerId.Length < 12)
                 return null;
 
-            await Task.Delay(4000); // Kali başlaması için bekle
+            await Task.Delay(8000); // Kali başlaması için bekle
 
             var portOutput = await RunDockerCommand($"port {containerId}");
             var hostPort = ParseHostPort(portOutput, 6901); // Kasm uses 6901
