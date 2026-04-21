@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.SignalR;
 using DetectiveCTF.API.Data;
 using DetectiveCTF.API.Models;
 using DetectiveCTF.API.Services;
+using DetectiveCTF.API.Hubs;
 using System.Security.Claims;
 
 namespace DetectiveCTF.API.Controllers;
@@ -15,11 +17,15 @@ public class ChallengesController : ControllerBase
 {
     private readonly AppDbContextNew _context;
     private readonly DockerService _dockerService;
+    private readonly IHubContext<BoardHub> _hubContext;
+    private readonly ILogger<ChallengesController> _logger;
 
-    public ChallengesController(AppDbContextNew context, DockerService dockerService)
+    public ChallengesController(AppDbContextNew context, DockerService dockerService, IHubContext<BoardHub> hubContext, ILogger<ChallengesController> logger)
     {
         _context = context;
         _dockerService = dockerService;
+        _hubContext = hubContext;
+        _logger = logger;
     }
 
     private int GetUserId()
@@ -83,6 +89,7 @@ public class ChallengesController : ControllerBase
                 c.HasVM,
                 c.Flag,
                 c.Hints,
+                c.UnlockContent,
                 c.RequiredChallengeId,
                 IsUnlocked = isUnlocked,
                 IsSolved   = isSolved,
@@ -108,18 +115,28 @@ public class ChallengesController : ControllerBase
             return NotFound(new { message = "Challenge bulunamadı" });
         }
 
-        // Challenge unlock kontrolü
+        // Challenge unlock kontrolü — kendi veya takım üyesi çözdüyse açık
         if (challenge.RequiredChallengeId.HasValue)
         {
+            // Kullanıcının takım üyelerini bul
+            var teamMemberIds = await _context.TeamMembers
+                .Where(tm => tm.TeamId == _context.TeamMembers
+                    .Where(tm2 => tm2.UserId == userId)
+                    .Select(tm2 => tm2.TeamId)
+                    .FirstOrDefault())
+                .Select(tm => tm.UserId)
+                .ToListAsync();
+
+            if (!teamMemberIds.Contains(userId))
+                teamMemberIds.Add(userId);
+
             var requiredSolved = await _context.UserChallengeProgresses
-                .AnyAsync(p => p.UserId == userId && 
-                             p.ChallengeId == challenge.RequiredChallengeId && 
-                             p.IsSolved);
+                .AnyAsync(p => teamMemberIds.Contains(p.UserId) &&
+                               p.ChallengeId == challenge.RequiredChallengeId &&
+                               p.IsSolved);
 
             if (!requiredSolved)
-            {
-                return BadRequest(new { message = "Bu challenge'ı açmak için önce önceki challenge'ı çözmelisiniz" });
-            }
+                return BadRequest(new { message = "Bu soruyu açmak için önce önceki soruyu çözmelisiniz" });
         }
 
         var progress = await _context.UserChallengeProgresses
@@ -175,12 +192,31 @@ public class ChallengesController : ControllerBase
 
         if (existingVM != null)
         {
+            // Terminal container da çalışıyor mu?
+            var existingTerminal = await _context.VMInstances
+                .FirstOrDefaultAsync(v => v.ChallengeId == null && v.UserId == userId && v.Status == "running");
+
+            int? existingTerminalPort = existingTerminal?.Port;
+
+            // Terminal yoksa başlat
+            if (existingTerminal == null)
+            {
+                var newTerminal = await _dockerService.StartWebTerminal(userId, null, existingVM.IPAddress, existingVM.Port);
+                if (newTerminal != null)
+                {
+                    _context.VMInstances.Add(newTerminal);
+                    await _context.SaveChangesAsync();
+                    existingTerminalPort = newTerminal.Port;
+                }
+            }
+
             return Ok(new
             {
                 message = "VM zaten çalışıyor",
                 vmId = existingVM.Id,
                 ipAddress = existingVM.IPAddress,
                 port = existingVM.Port,
+                terminalPort = existingTerminalPort,
                 expiresAt = existingVM.ExpiresAt
             });
         }
@@ -192,8 +228,16 @@ public class ChallengesController : ControllerBase
             return StatusCode(500, new { message = "VM başlatılamadı" });
         }
 
-        _context.VMInstances.Add(vm);
-        await _context.SaveChangesAsync();
+        try
+        {
+            _context.VMInstances.Add(vm);
+            await _context.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "VM kayıt hatası");
+            return StatusCode(500, new { message = $"VM kayıt hatası: {ex.Message}" });
+        }
 
         // Progress kaydı oluştur
         var progress = await _context.UserChallengeProgresses
@@ -218,12 +262,23 @@ public class ChallengesController : ControllerBase
 
         await _context.SaveChangesAsync();
 
+        // Web terminal başlat
+        int? terminalPort = null;
+        var terminal = await _dockerService.StartWebTerminal(userId, null, vm.IPAddress, vm.Port);
+        if (terminal != null)
+        {
+            _context.VMInstances.Add(terminal);
+            await _context.SaveChangesAsync();
+            terminalPort = terminal.Port;
+        }
+
         return Ok(new
         {
             message = "VM başlatıldı",
             vmId = vm.Id,
             ipAddress = vm.IPAddress,
             port = vm.Port,
+            terminalPort = terminalPort,
             expiresAt = vm.ExpiresAt
         });
     }
@@ -366,11 +421,18 @@ public class ChallengesController : ControllerBase
 
             await _context.SaveChangesAsync();
 
+        // Takım odasına unlock içeriğini yayınla — sadece DİĞER üyelere
+        if (!string.IsNullOrEmpty(challenge.UnlockContent))
+        {
+            await BoardHub.BroadcastUnlock(_hubContext, _context, userId, challenge.CaseId, challenge.UnlockContent);
+        }
+
             return Ok(new
             {
                 success = true,
                 message = $"Tebrikler! {challenge.Points} puan kazandınız!",
-                points  = challenge.Points
+                points  = challenge.Points,
+                unlockContent = challenge.UnlockContent
             });
         }
 
@@ -382,6 +444,40 @@ public class ChallengesController : ControllerBase
             message = "Yanlış flag! Tekrar deneyin.",
             attempts = progress.Attempts
         });
+    }
+
+    [HttpPost("{id}/start-kali")]
+    public async Task<ActionResult> StartKali(int id)
+    {
+        var userId = GetUserId();
+
+        var challenge = await _context.Challenges.FindAsync(id);
+        if (challenge == null || !challenge.HasVM)
+            return BadRequest(new { message = "Bu soru için VM yok" });
+
+        // Zaten çalışan hedef VM var mı?
+        var targetVM = await _context.VMInstances
+            .FirstOrDefaultAsync(v => v.ChallengeId == id && v.UserId == userId && v.Status == "running");
+
+        if (targetVM == null)
+            return BadRequest(new { message = "Önce hedef makineyi başlatın" });
+
+        // Zaten Kali çalışıyor mu?
+        var existingKali = await _context.VMInstances
+            .FirstOrDefaultAsync(v => v.ChallengeId == null && v.UserId == userId &&
+                                      v.Status == "running" && v.ContainerName.Contains("kali"));
+
+        if (existingKali != null)
+            return Ok(new { kaliPort = existingKali.Port, message = "Kali zaten çalışıyor" });
+
+        var kali = await _dockerService.StartKaliDesktop(userId, null, targetVM.IPAddress);
+        if (kali == null)
+            return StatusCode(500, new { message = "Kali başlatılamadı" });
+
+        _context.VMInstances.Add(kali);
+        await _context.SaveChangesAsync();
+
+        return Ok(new { kaliPort = kali.Port, message = "Kali masaüstü başlatıldı" });
     }
 
     [HttpPost("{id}/stop-vm")]

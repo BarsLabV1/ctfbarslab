@@ -23,6 +23,10 @@ public class Challenge
     // İpuçları (JSON array: [{text, penaltyPercent}])
     public string? Hints { get; set; }
     
+    // Çözülünce açılan içerik (JSON)
+    // { reportSection: {title, type, content}, boardNote: {title, text}, boardSuspect: {name, role, motive} }
+    public string? UnlockContent { get; set; }
+    
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     
     public Case Case { get; set; } = null!;

@@ -91,6 +91,13 @@ public class AppDbContextNew : DbContext
             .HasForeignKey(ucp => ucp.ChallengeId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        modelBuilder.Entity<VMInstance>()
+            .HasOne(v => v.Challenge)
+            .WithMany()
+            .HasForeignKey(v => v.ChallengeId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.SetNull);
+
         // Seed data
         SeedData(modelBuilder);
     }
@@ -141,6 +148,7 @@ public class AppDbContextNew : DbContext
                 HasVM = false,
                 Files = @"[{""name"":""security_cam_23_00.mp4"",""url"":""/evidence/case1/security_cam.mp4"",""type"":""video""}]",
                 Hints = @"[{""Text"":""Kamera kaydının 23:15 dakikasına dikkat edin"",""PenaltyPercent"":10},{""Text"":""Şüpheli kişinin yaka kartına bakın"",""PenaltyPercent"":25}]",
+                UnlockContent = @"{""reportSection"":{""title"":""ŞÜPHELİ TESPİT EDİLDİ"",""type"":""suspect"",""content"":""Güvenlik kamerası analizi sonucunda 23:15'te binaya giren kişi tespit edildi. Yaka kartında 'Sarah Johnson - CFO' yazmaktadır. Şirketin mali işlerinden sorumlu olan Johnson, olay gecesi binada bulunduğunu inkâr etmişti.""},""boardSuspect"":{""name"":""Sarah Johnson"",""role"":""CFO"",""motive"":""Henüz belirsiz — mali kayıtlar incelenmeli""}}",
                 CreatedAt = DateTime.UtcNow
             }
         );
@@ -161,6 +169,7 @@ public class AppDbContextNew : DbContext
                 HasVM = false,
                 Files = @"[{""name"":""system.log"",""url"":""/evidence/case1/system.log"",""type"":""document""}]",
                 Hints = @"[{""Text"":""grep komutuyla 'FAILED' kelimesini arayın"",""PenaltyPercent"":10},{""Text"":""192.168.1.x aralığındaki IP'lere bakın"",""PenaltyPercent"":20}]",
+                UnlockContent = @"{""reportSection"":{""title"":""YETKİSİZ ERİŞİM TESPİT EDİLDİ"",""type"":""evidence"",""content"":""Sistem logları incelendi. 192.168.1.100 IP adresinden gece 23:10-23:22 arasında CEO'nun bilgisayarına 14 başarısız giriş denemesi yapılmış, ardından 23:23'te erişim sağlanmıştır. Bu IP adresi şirket içi ağa aittir.""},""boardNote"":{""title"":""Kritik IP: 192.168.1.100"",""text"":""23:10-23:22 arası 14 başarısız giriş\n23:23'te erişim sağlandı\nŞirket içi ağ — kimin bilgisayarı?""}}",
                 CreatedAt = DateTime.UtcNow
             }
         );
@@ -179,9 +188,10 @@ public class AppDbContextNew : DbContext
                 Flag = "CTF{employee_access_granted}",
                 RequiredChallengeId = 2,
                 HasVM = true,
-                DockerImage = "ctf/ssh-server:latest",
+                DockerImage = "detectivectf/ssh-target:latest",
                 VMConnectionInfo = @"{""port"":22,""username"":""admin"",""hint"":""Default credentials""}",
                 Hints = @"[{""Text"":""Varsayılan şifreler genellikle admin:admin veya admin:password olur"",""PenaltyPercent"":15},{""Text"":""SSH bağlantısı için: ssh admin@192.168.1.100"",""PenaltyPercent"":30}]",
+                UnlockContent = @"{""reportSection"":{""title"":""ÇALIŞAN KAYITLARINA ERİŞİLDİ"",""type"":""document"",""content"":""SSH sunucusuna erişim sağlandı. Çalışan kayıtları incelendi. Sarah Johnson'ın bilgisayarına (192.168.1.100) olay gecesi 23:10'da uzaktan bağlandığı tespit edildi. Ayrıca 'financial_report_Q3_DELETED.xlsx' adlı silinmiş bir dosya bulundu.""},""boardNote"":{""title"":""Silinmiş Dosya Bulundu"",""text"":""financial_report_Q3_DELETED.xlsx\nSilme tarihi: Olay gecesi 23:25\nKim sildi: s.johnson""}}",
                 CreatedAt = DateTime.UtcNow
             }
         );
@@ -202,6 +212,7 @@ public class AppDbContextNew : DbContext
                 HasVM = false,
                 Files = @"[{""name"":""encrypted_email.txt"",""url"":""/evidence/case1/encrypted.txt"",""type"":""document""}]",
                 Hints = @"[{""Text"":""Caesar cipher ile şifrelenmiş olabilir"",""PenaltyPercent"":10},{""Text"":""ROT13 deneyin"",""PenaltyPercent"":25}]",
+                UnlockContent = @"{""reportSection"":{""title"":""ŞİFRELİ MESAJ ÇÖZÜLDÜ — MALİ DOLANDIRICILIK"",""type"":""evidence"",""content"":""Şifreli email çözüldü. Mesaj içeriği: 'John her şeyi biliyor. Q3 raporunu imha et, yoksa ikimiz de biteriz. — S.J.' Mesaj, Sarah Johnson'ın kişisel email hesabından CEO'nun özel asistanı Michael Reed'e gönderilmiştir. Gönderim tarihi: Olay gününden 3 saat önce.""},""boardNote"":{""title"":""Şifreli Mesaj İçeriği"",""text"":""Gönderen: s.johnson@şirket.com\nAlıcı: m.reed@şirket.com\n'John her şeyi biliyor. Q3 raporunu imha et'\nGönderim: Olay gününden 3 saat önce""}}",
                 CreatedAt = DateTime.UtcNow
             }
         );
@@ -221,6 +232,7 @@ public class AppDbContextNew : DbContext
                 RequiredChallengeId = 4,
                 HasVM = false,
                 Hints = @"[{""Text"":""Güvenlik kamerasında gördüğünüz kişiyi hatırlayın"",""PenaltyPercent"":20}]",
+                UnlockContent = @"{""reportSection"":{""title"":""DAVA KAPATILDI — KATİL TESPİT EDİLDİ"",""type"":""suspect"",""content"":""Tüm dijital deliller Sarah Johnson'ı işaret etmektedir. Güvenlik kamerası kaydı, sistem logları, SSH erişim kayıtları ve şifreli email mesajı birlikte değerlendirildiğinde Johnson'ın CEO John Smith'i mali dolandırıcılığını örtbas etmek amacıyla öldürdüğü sonucuna varılmıştır. Tutuklama kararı çıkarıldı.""}}",
                 CreatedAt = DateTime.UtcNow
             }
         );

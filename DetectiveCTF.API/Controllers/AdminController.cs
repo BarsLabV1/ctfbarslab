@@ -26,6 +26,29 @@ public class AdminController : ControllerBase
         return user?.IsAdmin ?? false;
     }
 
+    [HttpDelete("reset-users")]
+    public async Task<ActionResult> ResetUsers()
+    {
+        if (!await IsAdmin()) return Forbid();
+
+        // Admin hariç tüm kullanıcı verilerini temizle
+        var nonAdminIds = await _context.Users
+            .Where(u => !u.IsAdmin)
+            .Select(u => u.Id)
+            .ToListAsync();
+
+        _context.TeamMembers.RemoveRange(_context.TeamMembers);
+        _context.Teams.RemoveRange(_context.Teams);
+        _context.UserChallengeProgresses.RemoveRange(_context.UserChallengeProgresses);
+        _context.UserCaseProgresses.RemoveRange(_context.UserCaseProgresses);
+        _context.VMInstances.RemoveRange(_context.VMInstances);
+        _context.BoardStates.RemoveRange(_context.BoardStates);
+        _context.Users.RemoveRange(_context.Users.Where(u => !u.IsAdmin));
+
+        await _context.SaveChangesAsync();
+        return Ok(new { message = $"{nonAdminIds.Count} kullanıcı ve tüm ilgili veriler silindi" });
+    }
+
     [HttpGet("check")]
     public async Task<ActionResult> CheckAdmin()
     {
@@ -128,7 +151,8 @@ public class AdminController : ControllerBase
             DockerImage = request.DockerImage,
             VMConnectionInfo = request.VMConnectionInfo,
             Files = request.Files,
-            Hints = request.Hints
+            Hints = request.Hints,
+            UnlockContent = request.UnlockContent
         };
 
         _context.Challenges.Add(challenge);
@@ -163,6 +187,7 @@ public class AdminController : ControllerBase
         challenge.VMConnectionInfo = request.VMConnectionInfo;
         challenge.Files = request.Files;
         challenge.Hints = request.Hints;
+        challenge.UnlockContent = request.UnlockContent;
 
         await _context.SaveChangesAsync();
 
@@ -389,7 +414,8 @@ public record CreateChallengeRequest(
     string? DockerImage,
     string? VMConnectionInfo,
     string? Files,
-    string? Hints
+    string? Hints,
+    string? UnlockContent
 );
 
 public record CreateEvidenceRequest(

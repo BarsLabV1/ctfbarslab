@@ -11,10 +11,12 @@ let nextId = Date.now();
 const uid  = () => String(++nextId);
 
 /* ══════════════════════════════════════════ */
-const EvidenceBoard = ({ caseId, clues = [] }) => {
+const EvidenceBoard = ({ caseId, clues = [], autoItems = [], onUnlock, processedIds }) => {
   const boardRef   = useRef(null);
   const hubRef     = useRef(null);
-  const isSyncing  = useRef(false); // prevent echo loop
+  const isSyncing  = useRef(false);
+  const localProcessedIds = useRef(new Set());
+  const processedAutoIds = processedIds || localProcessedIds;
 
   const [connected, setConnected] = useState(false);
   const [notes,     setNotes]     = useState(() =>
@@ -37,6 +39,50 @@ const EvidenceBoard = ({ caseId, clues = [] }) => {
   const [newNote,         setNewNote]         = useState({ title:'', text:'' });
   const [newSuspect,      setNewSuspect]      = useState({ name:'', role:'', motive:'' });
 
+  /* ── Auto items from solved questions ── */
+  useEffect(() => {
+    if (!autoItems || autoItems.length === 0) return;
+    const lastItem = autoItems[autoItems.length - 1];
+
+    // Zaten işlendiyse tekrar ekleme
+    if (processedAutoIds.current.has(lastItem.id)) return;
+    processedAutoIds.current.add(lastItem.id);
+
+    if (lastItem.type === 'note') {
+      const i = notes.length % NOTE_COLORS.length;
+      const newAutoNote = {
+        id: uid(),
+        _auto: true,
+        x: 80 + Math.random() * 300,
+        y: 80 + Math.random() * 200,
+        title: lastItem.title || 'Yeni Bulgu',
+        text: lastItem.text || '',
+        color: NOTE_COLORS[i],
+        rotation: NOTE_ROTATIONS[i],
+      };
+      setNotes(prev => {
+        const updated = [...prev, newAutoNote];
+        setTimeout(() => broadcast(updated, strings, suspects), 200);
+        return updated;
+      });
+    } else if (lastItem.type === 'suspect') {
+      const newAutoSuspect = {
+        id: uid(),
+        _auto: true,
+        x: 500 + Math.random() * 150,
+        y: 60 + Math.random() * 200,
+        name: lastItem.name || 'Bilinmiyor',
+        role: lastItem.role || '',
+        motive: lastItem.motive || '',
+      };
+      setSuspects(prev => {
+        const updated = [...prev, newAutoSuspect];
+        setTimeout(() => broadcast(notes, strings, updated), 200);
+        return updated;
+      });
+    }
+  }, [autoItems]); // eslint-disable-line
+
   /* ── SignalR connect ── */
   useEffect(() => {
     if (!caseId) return;
@@ -51,9 +97,18 @@ const EvidenceBoard = ({ caseId, clues = [] }) => {
     hub.on('BoardLoaded', (json) => {
       try {
         const state = JSON.parse(json);
-        if (state.notes)    setNotes(state.notes);
+        if (state.notes)    setNotes(prev => {
+          // autoItems'dan gelen notları koru, DB'dekilerle merge et
+          const dbIds = new Set((state.notes || []).map(n => n.id));
+          const autoOnly = prev.filter(n => !dbIds.has(n.id) && n._auto);
+          return [...(state.notes || []), ...autoOnly];
+        });
         if (state.strings)  setStrings(state.strings);
-        if (state.suspects) setSuspects(state.suspects);
+        if (state.suspects) setSuspects(prev => {
+          const dbIds = new Set((state.suspects || []).map(s => s.id));
+          const autoOnly = prev.filter(s => !dbIds.has(s.id) && s._auto);
+          return [...(state.suspects || []), ...autoOnly];
+        });
       } catch {}
     });
 
@@ -66,6 +121,14 @@ const EvidenceBoard = ({ caseId, clues = [] }) => {
         if (state.suspects) setSuspects(state.suspects);
       } catch {}
       setTimeout(() => { isSyncing.current = false; }, 50);
+    });
+
+    hub.on('ChallengeUnlocked', (json) => {
+      // Takım üyesi flag çözdü — onUnlock callback'ini tetikle
+      try {
+        const content = JSON.parse(json);
+        if (onUnlock) onUnlock(content);
+      } catch {}
     });
 
     hub.start()

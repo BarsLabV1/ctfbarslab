@@ -1,0 +1,17 @@
+# .NET
+DetectiveCTF.API/bin/
+DetectiveCTF.API/obj/
+DetectiveCTF.API/*.db
+DetectiveCTF.API/*.db-shm
+DetectiveCTF.API/*.db-wal
+DetectiveCTF.API/wwwroot/uploads/
+
+# Node
+detective-ctf-frontend/node_modules/
+detective-ctf-frontend/build/
+detective-ctf-frontend/.env
+
+# IDE
+.vscode/
+.vs/
+*.user

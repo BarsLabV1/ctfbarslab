@@ -544,3 +544,66 @@
 @media (max-width: 768px) {
   .adm-ev-form { grid-template-columns: 1fr; }
 }
+
+/* ── Section divider ── */
+.adm-section-divider {
+  font-size: 12px;
+  font-weight: 700;
+  color: #667eea;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 10px 0 4px;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  margin-top: 8px;
+}
+
+/* ── Hint rows ── */
+.adm-hint-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.adm-hint-row input { flex: 1; }
+
+.adm-hint-remove {
+  background: rgba(248,113,113,0.1);
+  border: 1px solid rgba(248,113,113,0.3);
+  color: #f87171;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.adm-hint-add {
+  background: rgba(102,126,234,0.1);
+  border: 1px dashed rgba(102,126,234,0.3);
+  color: #667eea;
+  padding: 6px 14px;
+  border-radius: 7px;
+  font-size: 13px;
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.15s;
+}
+.adm-hint-add:hover { background: rgba(102,126,234,0.18); }
+
+/* ── Unlock sections ── */
+.adm-unlock-section {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.adm-unlock-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #94a3b8;
+}

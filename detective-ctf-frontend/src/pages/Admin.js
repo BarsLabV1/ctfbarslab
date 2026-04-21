@@ -66,7 +66,14 @@ const Admin = () => {
   const blankCase = { title:'', description:'', story:'', difficulty:3, totalPoints:500, imageUrl:'' };
   const blankQ    = { caseId:'', title:'', description:'', category:'OSINT', order:1, points:100,
                       flag:'', requiredChallengeId:'', hasVM:false, dockerImage:'', vmConnectionInfo:'',
-                      files:'', hints:'' };
+                      files:'',
+                      // İpuçları — form alanları
+                      hints: [],  // [{text, penaltyPercent}]
+                      // Çözülünce açılan içerik — form alanları
+                      unlockReportTitle: '', unlockReportType: 'evidence', unlockReportContent: '',
+                      unlockBoardNoteTitle: '', unlockBoardNoteText: '',
+                      unlockSuspectName: '', unlockSuspectRole: '', unlockSuspectMotive: '',
+                    };
   const [caseForm, setCaseForm] = useState(blankCase);
   const [qForm,    setQForm]    = useState(blankQ);
 
@@ -196,21 +203,66 @@ const Admin = () => {
   /* ── question CRUD ── */
   const openNewQ  = () => { setQForm({ ...blankQ, caseId: selCase || '' }); setQModal('new'); };
   const openEditQ = (q) => {
-    setQForm({ caseId:q.caseId||selCase, title:q.title, description:q.description,
-      category:q.category, order:q.order, points:q.points, flag:q.flag||'',
-      requiredChallengeId:q.requiredChallengeId||'', hasVM:q.hasVM||false,
-      dockerImage:q.dockerImage||'', vmConnectionInfo:q.vmConnectionInfo||'',
-      files:q.files||'', hints:q.hints||'' });
+    // hints JSON'ı parse et
+    let hintsArr = [];
+    try { hintsArr = q.hints ? JSON.parse(q.hints) : []; } catch {}
+
+    // unlockContent JSON'ı parse et
+    let uc = {};
+    try { uc = q.unlockContent ? JSON.parse(q.unlockContent) : {}; } catch {}
+
+    setQForm({
+      caseId: q.caseId||selCase, title: q.title, description: q.description,
+      category: q.category, order: q.order, points: q.points, flag: q.flag||'',
+      requiredChallengeId: q.requiredChallengeId||'', hasVM: q.hasVM||false,
+      dockerImage: q.dockerImage||'', vmConnectionInfo: q.vmConnectionInfo||'',
+      files: q.files||'',
+      hints: hintsArr.map(h => ({ text: h.Text||h.text||'', penaltyPercent: h.PenaltyPercent||h.penaltyPercent||10 })),
+      unlockReportTitle:   uc.reportSection?.title   || '',
+      unlockReportType:    uc.reportSection?.type    || 'evidence',
+      unlockReportContent: uc.reportSection?.content || '',
+      unlockBoardNoteTitle: uc.boardNote?.title || '',
+      unlockBoardNoteText:  uc.boardNote?.text  || '',
+      unlockSuspectName:   uc.boardSuspect?.name   || '',
+      unlockSuspectRole:   uc.boardSuspect?.role   || '',
+      unlockSuspectMotive: uc.boardSuspect?.motive || '',
+    });
     setQModal(q);
   };
 
   const saveQ = async () => {
+    // hints JSON oluştur
+    const hintsJson = qForm.hints.length > 0
+      ? JSON.stringify(qForm.hints.map(h => ({ Text: h.text, PenaltyPercent: parseInt(h.penaltyPercent)||10 })))
+      : null;
+
+    // unlockContent JSON oluştur
+    const uc = {};
+    if (qForm.unlockReportTitle && qForm.unlockReportContent) {
+      uc.reportSection = { title: qForm.unlockReportTitle, type: qForm.unlockReportType, content: qForm.unlockReportContent };
+    }
+    if (qForm.unlockBoardNoteTitle && qForm.unlockBoardNoteText) {
+      uc.boardNote = { title: qForm.unlockBoardNoteTitle, text: qForm.unlockBoardNoteText };
+    }
+    if (qForm.unlockSuspectName) {
+      uc.boardSuspect = { name: qForm.unlockSuspectName, role: qForm.unlockSuspectRole, motive: qForm.unlockSuspectMotive };
+    }
+
     const body = {
-      ...qForm,
       caseId: parseInt(qForm.caseId),
+      title: qForm.title,
+      description: qForm.description,
+      category: qForm.category,
       order: parseInt(qForm.order),
       points: parseInt(qForm.points),
+      flag: qForm.flag,
       requiredChallengeId: qForm.requiredChallengeId ? parseInt(qForm.requiredChallengeId) : null,
+      hasVM: qForm.hasVM,
+      dockerImage: qForm.dockerImage || null,
+      vmConnectionInfo: qForm.vmConnectionInfo || null,
+      files: qForm.files || null,
+      hints: hintsJson,
+      unlockContent: Object.keys(uc).length > 0 ? JSON.stringify(uc) : null,
     };
     try {
       if (qModal === 'new') {
@@ -523,9 +575,68 @@ const Admin = () => {
             <input value={qForm.flag} onChange={e => setQForm(f=>({...f,flag:e.target.value}))} placeholder="CTF{flag_buraya}" className="adm-flag-input" />
             <label>Önceki Soru ID (kilit için)</label>
             <input type="number" value={qForm.requiredChallengeId} onChange={e => setQForm(f=>({...f,requiredChallengeId:e.target.value}))} placeholder="Boş bırakırsan ilk soru olur" />
-            <label>İpuçları (JSON)</label>
-            <textarea rows={2} value={qForm.hints} onChange={e => setQForm(f=>({...f,hints:e.target.value}))}
-              placeholder='[{"Text":"İpucu metni","PenaltyPercent":10}]' />
+
+            {/* ── İpuçları ── */}
+            <div className="adm-section-divider">💡 İpuçları</div>
+            {qForm.hints.map((h, i) => (
+              <div key={i} className="adm-hint-row">
+                <input
+                  placeholder="İpucu metni"
+                  value={h.text}
+                  onChange={e => setQForm(f => ({ ...f, hints: f.hints.map((x,j) => j===i ? {...x, text: e.target.value} : x) }))}
+                  style={{flex:1}}
+                />
+                <input
+                  type="number" min={1} max={100}
+                  placeholder="% ceza"
+                  value={h.penaltyPercent}
+                  onChange={e => setQForm(f => ({ ...f, hints: f.hints.map((x,j) => j===i ? {...x, penaltyPercent: e.target.value} : x) }))}
+                  style={{width:80}}
+                />
+                <button className="adm-hint-remove" onClick={() => setQForm(f => ({ ...f, hints: f.hints.filter((_,j) => j!==i) }))}>✕</button>
+              </div>
+            ))}
+            <button className="adm-hint-add" onClick={() => setQForm(f => ({ ...f, hints: [...f.hints, {text:'', penaltyPercent:10}] }))}>
+              + İpucu Ekle
+            </button>
+
+            {/* ── Çözülünce açılan içerik ── */}
+            <div className="adm-section-divider">🔓 Çözülünce Açılacak İçerik</div>
+
+            <div className="adm-unlock-section">
+              <div className="adm-unlock-label">📄 Rapor Belgesi</div>
+              <input placeholder="Belge başlığı (örn: Şüpheli Tespit Edildi)" value={qForm.unlockReportTitle}
+                onChange={e => setQForm(f=>({...f, unlockReportTitle: e.target.value}))} />
+              <select value={qForm.unlockReportType} onChange={e => setQForm(f=>({...f, unlockReportType: e.target.value}))}>
+                <option value="evidence">🔬 Adli Bulgu</option>
+                <option value="suspect">🚨 Şüpheli Profili</option>
+                <option value="witness">👁️ Tanık İfadesi</option>
+                <option value="document">📄 Resmi Belge</option>
+                <option value="info">📋 Bilgi Notu</option>
+              </select>
+              <textarea rows={3} placeholder="Belge içeriği..." value={qForm.unlockReportContent}
+                onChange={e => setQForm(f=>({...f, unlockReportContent: e.target.value}))} />
+            </div>
+
+            <div className="adm-unlock-section">
+              <div className="adm-unlock-label">🔍 Panoya Not</div>
+              <input placeholder="Not başlığı" value={qForm.unlockBoardNoteTitle}
+                onChange={e => setQForm(f=>({...f, unlockBoardNoteTitle: e.target.value}))} />
+              <textarea rows={2} placeholder="Not içeriği..." value={qForm.unlockBoardNoteText}
+                onChange={e => setQForm(f=>({...f, unlockBoardNoteText: e.target.value}))} />
+            </div>
+
+            <div className="adm-unlock-section">
+              <div className="adm-unlock-label">🚨 Panoya Şüpheli</div>
+              <div className="adm-form-row">
+                <input placeholder="Ad Soyad" value={qForm.unlockSuspectName}
+                  onChange={e => setQForm(f=>({...f, unlockSuspectName: e.target.value}))} />
+                <input placeholder="Rol / Meslek" value={qForm.unlockSuspectRole}
+                  onChange={e => setQForm(f=>({...f, unlockSuspectRole: e.target.value}))} />
+              </div>
+              <input placeholder="Motif" value={qForm.unlockSuspectMotive}
+                onChange={e => setQForm(f=>({...f, unlockSuspectMotive: e.target.value}))} />
+            </div>
             <div className="adm-form-row adm-vm-row">
               <label className="adm-checkbox-label">
                 <input type="checkbox" checked={qForm.hasVM} onChange={e => setQForm(f=>({...f,hasVM:e.target.checked}))} />
