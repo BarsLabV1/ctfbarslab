@@ -485,6 +485,7 @@ const Play = () => {
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
   const handleUnlock = useCallback((content, challengeTitle) => {
+    console.log('handleUnlock called:', content, challengeTitle); // debug
     if (content.reportSection) {
       setUnlockedSections(prev => [...prev, {
         ...content.reportSection,
@@ -604,9 +605,10 @@ const Play = () => {
 
         {tab === 'report' && <CrimeSceneReport caseData={caseData} unlockedSections={unlockedSections} />}
 
-        {tab === 'board' && (
+        {/* EvidenceBoard her zaman mount edilsin — sadece gizle/göster */}
+        <div style={{ display: tab === 'board' ? 'block' : 'none' }}>
           <EvidenceBoard caseId={parseInt(caseId)} clues={caseData.availableClues || []} autoItems={boardAutoItems} onUnlock={handleUnlock} processedIds={processedAutoIds} />
-        )}
+        </div>
 
         {tab === 'questions' && (
           <div className="questions-tab">
