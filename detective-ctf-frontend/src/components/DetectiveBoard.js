@@ -13,6 +13,210 @@ const CATEGORY_ICONS = {
   Reverse: '⚙️', PWN: '💣', Network: '📡', Final: '🎯',
 };
 
+/* ── VM Panel ── */
+const VMPanel = ({ challenges, caseId, onRefresh }) => {
+  const { showToast } = useToast();
+  const [vmData,       setVmData]       = useState(null);
+  const [starting,     setStarting]     = useState(false);
+  const [stopping,     setStopping]     = useState(false);
+  const [kaliPort,     setKaliPort]     = useState(null);
+  const [startingKali, setStartingKali] = useState(false);
+  const [open,         setOpen]         = useState(false);
+
+  const vmChallenge = challenges.find(c => c.hasVM) || null;
+  if (!vmChallenge) return null;
+
+  const startVM = async () => {
+    setStarting(true);
+    try {
+      const res = await api.post(`/challenges/${vmChallenge.id}/start-vm`);
+      setVmData(res.data);
+      showToast(res.data.webUrl ? 'Web sitesi hazır!' : `VM başlatıldı!`, 'success');
+      onRefresh();
+    } catch (err) {
+      showToast(err.response?.data?.message || 'VM başlatılamadı', 'error');
+    } finally { setStarting(false); }
+  };
+
+  const stopVM = async () => {
+    setStopping(true);
+    try {
+      await api.post(`/challenges/${vmChallenge.id}/stop-vm`);
+      setVmData(null); setKaliPort(null);
+      showToast('VM durduruldu', 'info');
+      onRefresh();
+    } catch { showToast('Durdurulamadı', 'error'); }
+    finally { setStopping(false); }
+  };
+
+  return (
+    <div className="db-vm-panel">
+      <button className="db-vm-toggle" onClick={() => setOpen(o => !o)}>
+        🖥️ VM {open ? '▲' : '▼'}
+      </button>
+
+      {open && (
+        <div className="db-vm-content">
+          <div className="db-vm-title">{vmChallenge.title}</div>
+
+          {!vmData ? (
+            <button className="db-vm-start" onClick={startVM} disabled={starting}>
+              {starting ? '⏳ Başlatılıyor...' : '🚀 Makineyi Başlat'}
+            </button>
+          ) : (
+            <>
+              <div className="db-vm-status">
+                <span className="db-vm-dot"/>
+                <span>Çalışıyor</span>
+              </div>
+
+              {/* Web sitesi varsa büyük buton */}
+              {vmData.webUrl && (
+                <a href={vmData.webUrl} target="_blank" rel="noopener noreferrer" className="db-vm-web-btn">
+                  🌐 Web Sitesini Aç
+                </a>
+              )}
+
+              {/* SSH bilgisi */}
+              {!vmData.webUrl && (
+                <div className="db-vm-info">
+                  <span>SSH:</span>
+                  <code>{vmData.ipAddress}:{vmData.port}</code>
+                </div>
+              )}
+
+              <div className="db-vm-btns">
+                {vmData.terminalPort && (
+                  <a href={`http://localhost:${vmData.terminalPort}`} target="_blank" rel="noopener noreferrer" className="db-vm-btn-sec">
+                    Terminal
+                  </a>
+                )}
+                <button className="db-vm-btn-sec" disabled={startingKali} onClick={async () => {
+                  setStartingKali(true);
+                  try {
+                    const res = await api.post(`/challenges/${vmChallenge.id}/start-kali`);
+                    setKaliPort(res.data.kaliPort);
+                    showToast('Kali başlatıldı!', 'success');
+                  } catch (err) { showToast(err.response?.data?.message || 'Kali başlatılamadı', 'error'); }
+                  finally { setStartingKali(false); }
+                }}>
+                  {startingKali ? '...' : '🐉 Kali'}
+                </button>
+                <button className="db-vm-btn-stop" onClick={stopVM} disabled={stopping}>
+                  {stopping ? '...' : '⏹'}
+                </button>
+              </div>
+
+              {kaliPort && (
+                <a href={`http://localhost:${kaliPort}/`} target="_blank" rel="noopener noreferrer" className="db-vm-kali-btn">
+                  🖥️ Kali Masaüstü
+                </a>
+              )}
+
+              {vmData.expiresAt && (
+                <div className="db-vm-expires">
+                  ⏱ {new Date(vmData.expiresAt).toLocaleTimeString('tr-TR')}'de kapanır
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* ── Admin kart popup içeriği ── */
+const AdminCardContent = ({ card }) => {
+  const BASE = (process.env.REACT_APP_API_URL || 'http://localhost:5001/api').replace('/api', '');
+
+  if (card.type === 'note' || card.type === 'document') {
+    return <p className="db-card-popup-desc" style={{whiteSpace:'pre-line'}}>{card.content}</p>;
+  }
+  if (card.type === 'photo') {
+    return <img src={BASE + card.fileUrl} alt={card.title} style={{width:'100%',borderRadius:4,border:'2px solid rgba(0,0,0,0.2)'}}/>;
+  }
+  if (card.type === 'video') {
+    return <video src={BASE + card.fileUrl} controls autoPlay style={{width:'100%',borderRadius:4}}/>;
+  }
+  if (card.type === 'audio') {
+    return (
+      <div style={{padding:'20px 0'}}>
+        <audio src={BASE + card.fileUrl} controls style={{width:'100%'}}/>
+        {card.content && <p className="db-card-popup-desc" style={{marginTop:12}}>{card.content}</p>}
+      </div>
+    );
+  }
+  if (card.type === 'website') {
+    return (
+      <div>
+        <p className="db-card-popup-desc" style={{marginBottom:12}}>
+          Hedef: <code style={{color:'#34d399'}}>{card.externalUrl}</code>
+        </p>
+        <iframe
+          src={card.externalUrl}
+          title={card.title}
+          style={{width:'100%',height:400,border:'1px solid rgba(0,0,0,0.2)',borderRadius:4}}
+          sandbox="allow-same-origin allow-scripts allow-forms"
+        />
+      </div>
+    );
+  }
+  if (card.type === 'terminal') {
+    return (
+      <div>
+        <p className="db-card-popup-desc" style={{marginBottom:12}}>
+          Docker Image: <code style={{color:'#34d399'}}>{card.dockerImage}</code>
+        </p>
+        <p className="db-card-popup-desc">VM başlatmak için Sorular sekmesindeki VM panelini kullanın.</p>
+      </div>
+    );
+  }
+  return <p className="db-card-popup-desc">{card.content || 'İçerik yok'}</p>;
+};
+
+/* ── Admin Board Card (panoya admin tarafından eklenen) ── */
+const AdminBoardCard = ({ card, onClick, onDragStart, wasDragged }) => {
+  const BASE = (process.env.REACT_APP_API_URL || 'http://localhost:5001/api').replace('/api', '');
+  const locked = !card.isUnlocked;
+
+  const TYPE_ICONS = {
+    note: '📝', photo: '🖼️', video: '🎥', document: '📄',
+    terminal: '💻', website: '🌐', audio: '🎵',
+  };
+
+  return (
+    <div
+      className={`db-card db-admin-card db-admin-${card.type} ${locked ? 'db-locked' : ''}`}
+      style={{
+        left: card.posX,
+        top: card.posY,
+        transform: `rotate(${card.rotation}deg)`,
+        background: card.type === 'note' ? (card.color || '#bacb9a') : undefined,
+      }}
+      onMouseDown={e => !locked && onDragStart(e)}
+      onClick={() => {
+        if (wasDragged && wasDragged.current) return;
+        !locked && onClick();
+      }}
+    >
+      <div className="db-pin"/>
+      {locked && <div className="db-lock-icon">🔒</div>}
+      <div className="db-admin-card-icon">{TYPE_ICONS[card.type] || '📁'}</div>
+      <div className="db-admin-card-title">{card.title}</div>
+      {card.type === 'note' && card.content && (
+        <div className="db-admin-card-preview">{card.content.slice(0, 80)}{card.content.length > 80 ? '...' : ''}</div>
+      )}
+      {card.type === 'photo' && card.fileUrl && (
+        <img src={BASE + card.fileUrl} alt={card.title} className="db-admin-card-thumb"/>
+      )}
+      {['video','audio','document','terminal','website'].includes(card.type) && (
+        <div className="db-admin-card-hint">Tıkla → Görüntüle</div>
+      )}
+    </div>
+  );
+};
+
 /* ── Kart pozisyonları (sabit layout) ── */
 const getCardLayout = (challenges) => {
   const positions = [
@@ -56,6 +260,7 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
   const [strings,    setStrings]    = useState([]);
   const [userNotes,  setUserNotes]  = useState([]);
   const [suspects,   setSuspects]   = useState([]);
+  const [boardCards, setBoardCards] = useState([]); // admin kartları
 
   // UI state
   const [selectedCard,  setSelectedCard]  = useState(null); // sağ panel (flag girişi)
@@ -71,6 +276,14 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
   useEffect(() => {
     setChallenges(getCardLayout(initialChallenges));
   }, [initialChallenges]);
+
+  // Admin board kartlarını yükle
+  useEffect(() => {
+    if (!caseId) return;
+    api.get(`/board-cards/case/${caseId}`)
+      .then(res => setBoardCards(res.data))
+      .catch(() => {});
+  }, [caseId, initialChallenges]); // challenges değişince (soru çözülünce) yenile
 
   /* ── SignalR ── */
   useEffect(() => {
@@ -116,6 +329,9 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
   }, [caseId]);
 
   /* ── Pan/Zoom ── */
+  const adminDrag = useRef(null); // {id, ox, oy}
+  const adminDragged = useRef(false); // sürükleme oldu mu?
+
   const onMouseDown = (e) => {
     if (viewCard || viewReport || showAddNote) return;
     if (e.target.closest('.db-card') || e.target.closest('.db-panel')) return;
@@ -123,12 +339,46 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
     panStart.current = { x: e.clientX - pan.x, y: e.clientY - pan.y };
   };
 
+  const startAdminDrag = useCallback((e, cardId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const vp = viewportRef.current.getBoundingClientRect();
+    const bc = boardCards.find(c => c.id === cardId);
+    if (!bc) return;
+    const bx = (e.clientX - vp.left - pan.x) / scale;
+    const by = (e.clientY - vp.top  - pan.y) / scale;
+    adminDrag.current = { id: cardId, ox: bx - bc.posX, oy: by - bc.posY };
+    adminDragged.current = false;
+  }, [boardCards, pan, scale]);
+
   const onMouseMove = useCallback((e) => {
+    // Admin kart sürükleme
+    if (adminDrag.current) {
+      const vp = viewportRef.current?.getBoundingClientRect();
+      if (!vp) return;
+      const bx = (e.clientX - vp.left - pan.x) / scale;
+      const by = (e.clientY - vp.top  - pan.y) / scale;
+      const dragId = adminDrag.current.id;
+      if (!dragId) return;
+      const newX = Math.round(bx - adminDrag.current.ox);
+      const newY = Math.round(by - adminDrag.current.oy);
+      adminDragged.current = true;
+      setBoardCards(prev => prev.map(c =>
+        c.id === dragId ? { ...c, posX: newX, posY: newY } : c
+      ));
+      return;
+    }
     if (!isPanning.current) return;
     setPan({ x: e.clientX - panStart.current.x, y: e.clientY - panStart.current.y });
-  }, []);
+  }, [pan, scale]);
 
-  const onMouseUp = () => { isPanning.current = false; };
+  const onMouseUp = () => {
+    if (adminDragged.current) {
+      adminDragged.current = false;
+    }
+    adminDrag.current = null;
+    isPanning.current = false;
+  };
 
   const onWheel = (e) => {
     // Popup açıksa scroll'u engelle
@@ -349,6 +599,17 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
             {s.motive && <div className="db-suspect-motive">⚠️ {s.motive}</div>}
           </div>
         ))}
+
+        {/* ── Admin Pano Kartları ── */}
+        {boardCards.map(bc => (
+          <AdminBoardCard
+            key={bc.id}
+            card={bc}
+            onDragStart={(e) => startAdminDrag(e, bc.id)}
+            wasDragged={adminDragged}
+            onClick={() => setViewCard({ ...bc, isAdminCard: true })}
+          />
+        ))}
       </div>
 
       {/* ── Açık Soru Paneli (sağ kenar) ── */}
@@ -362,6 +623,13 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
           ⌂
         </button>
       </div>
+
+      {/* ── VM Panel (sağ üst) ── */}
+      {challenges.some(c => c.hasVM) && (
+        <VMPanel challenges={challenges} caseId={caseId} onRefresh={() => {
+          api.get(`/challenges/case/${caseId}`).then(r => setChallenges(getCardLayout(r.data)));
+        }} />
+      )}
 
       {/* ── Not ekleme modal ── */}
       {showAddNote && (
@@ -410,9 +678,14 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
 
               <div className="db-card-popup-divider"/>
 
-              <p className="db-card-popup-desc">
-                {cardDetails[viewCard.id]?.description || viewCard.description}
-              </p>
+              {/* Admin kartı içeriği */}
+              {viewCard.isAdminCard ? (
+                <AdminCardContent card={viewCard} />
+              ) : (
+                <p className="db-card-popup-desc">
+                  {cardDetails[viewCard.id]?.description || viewCard.description}
+                </p>
+              )}
 
               {/* Deliller */}
               {cardDetails[viewCard.id]?.evidences?.length > 0 && (
@@ -441,8 +714,8 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
                 </div>
               )}
 
-              {/* İpuçları */}
-              {(() => {
+              {/* İpuçları — sadece soru kartlarında */}
+              {!viewCard.isAdminCard && (() => {
                 const hints = (() => {
                   try {
                     const raw = cardDetails[viewCard.id]?.hints || viewCard.hints;
@@ -470,8 +743,8 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
                 );
               })()}
 
-              {/* Flag girişi */}
-              {!viewCard.isSolved && (
+              {/* Flag girişi — sadece soru kartlarında */}
+              {!viewCard.isAdminCard && !viewCard.isSolved && (
                 <div className="db-card-popup-flag">
                   <div className="db-card-popup-section-title">🚩 Flag Gir</div>
                   <div className="db-flag-row">

@@ -722,3 +722,230 @@
   margin-bottom: 10px;
   filter: sepia(0.3) contrast(1.1);
 }
+
+/* ── Admin Board Cards ── */
+.db-admin-card {
+  width: 180px;
+  min-height: 140px;
+  padding: 28px 14px 14px;
+  border-radius: 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+}
+
+.db-admin-note    { background: #bacb9a; }
+.db-admin-photo   { background: #f5f0e8; border: 2px solid #2c2c2c; }
+.db-admin-video   { background: #1a1a2e; border: 2px solid #9e1b1b; }
+.db-admin-document{ background: #f0ede0; border: 2px solid #555; }
+.db-admin-terminal{ background: #0a0a0a; border: 2px solid #00ff88; }
+.db-admin-website { background: #0d1117; border: 2px solid #00d4ff; }
+.db-admin-audio   { background: #1a0a2e; border: 2px solid #a855f7; }
+
+.db-admin-card-icon { font-size: 28px; }
+
+.db-admin-card-title {
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #1a1a1a;
+  line-height: 1.3;
+}
+
+.db-admin-terminal .db-admin-card-title,
+.db-admin-video .db-admin-card-title,
+.db-admin-website .db-admin-card-title,
+.db-admin-audio .db-admin-card-title {
+  color: #e2e8f0;
+}
+
+.db-admin-card-preview {
+  font-size: 9px;
+  color: #555;
+  line-height: 1.4;
+  font-family: 'Courier New', monospace;
+}
+
+.db-admin-card-thumb {
+  width: 100%;
+  height: 70px;
+  object-fit: cover;
+  border-radius: 2px;
+  filter: sepia(0.2) contrast(1.1);
+}
+
+.db-admin-card-hint {
+  font-size: 8px;
+  color: #888;
+  font-style: italic;
+  border-top: 1px dashed rgba(0,0,0,0.15);
+  padding-top: 4px;
+  width: 100%;
+  text-align: center;
+}
+
+/* ── VM Panel ── */
+.db-vm-panel {
+  position: fixed;
+  top: 60px;
+  right: 16px;
+  z-index: 200;
+  min-width: 220px;
+}
+
+.db-vm-toggle {
+  background: rgba(10,14,26,0.95);
+  border: 1px solid rgba(245,197,24,0.3);
+  color: #f5c518;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  backdrop-filter: blur(8px);
+  transition: background 0.15s;
+}
+.db-vm-toggle:hover { background: rgba(245,197,24,0.1); }
+
+.db-vm-content {
+  background: rgba(10,14,26,0.97);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 0 0 8px 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  backdrop-filter: blur(12px);
+}
+
+.db-vm-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.db-vm-start {
+  width: 100%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border: none;
+  color: white;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.db-vm-start:hover:not(:disabled) { opacity: 0.9; }
+.db-vm-start:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.db-vm-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #34d399;
+  font-weight: 600;
+}
+
+.db-vm-dot {
+  width: 8px;
+  height: 8px;
+  background: #34d399;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #34d399;
+}
+
+/* Web sitesi butonu — büyük ve belirgin */
+.db-vm-web-btn {
+  display: block;
+  width: 100%;
+  background: linear-gradient(135deg, rgba(0,212,255,0.15), rgba(0,212,255,0.08));
+  border: 1px solid rgba(0,212,255,0.4);
+  color: #00d4ff;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  transition: all 0.15s;
+  animation: vmPulse 2s infinite;
+}
+.db-vm-web-btn:hover {
+  background: rgba(0,212,255,0.2);
+  box-shadow: 0 0 16px rgba(0,212,255,0.3);
+}
+
+@keyframes vmPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0,212,255,0.3); }
+  50%       { box-shadow: 0 0 0 6px rgba(0,212,255,0); }
+}
+
+.db-vm-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #64748b;
+}
+.db-vm-info code { color: #34d399; font-family: monospace; }
+
+.db-vm-btns {
+  display: flex;
+  gap: 6px;
+}
+
+.db-vm-btn-sec {
+  flex: 1;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #94a3b8;
+  padding: 6px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.db-vm-btn-sec:hover { background: rgba(255,255,255,0.1); color: #e2e8f0; }
+.db-vm-btn-sec:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.db-vm-btn-stop {
+  background: rgba(248,113,113,0.1);
+  border: 1px solid rgba(248,113,113,0.3);
+  color: #f87171;
+  padding: 6px 10px;
+  border-radius: 5px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.db-vm-btn-stop:hover { background: rgba(248,113,113,0.2); }
+
+.db-vm-kali-btn {
+  display: block;
+  background: rgba(168,85,247,0.12);
+  border: 1px solid rgba(168,85,247,0.3);
+  color: #c084fc;
+  padding: 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+}
+
+.db-vm-expires {
+  font-size: 10px;
+  color: #334155;
+  text-align: center;
+}

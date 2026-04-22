@@ -1,0 +1,19 @@
+CEO Ofis Notu - Kişisel
+========================
+
+Eğer bu notu okuyorsanız, bir şeyler ters gitti demektir.
+
+Son günlerde şirket içinde garip hareketler fark ettim.
+Birisi arşiv sistemlerine yetkisiz erişim sağlamaya çalışıyor.
+
+Bağlantı kurduğum kişi bana şunu söyledi:
+"Onlar darknews üzerinden haberleşiyor."
+
+Site: http://darknews.local:8080
+Kullanıcı: reporter / pass: news2024
+
+Dikkatli ol. K.A. bu işin içinde.
+
+flag{ssh_access_granted}
+
+- CEO

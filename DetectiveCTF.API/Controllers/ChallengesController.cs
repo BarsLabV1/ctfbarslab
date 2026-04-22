@@ -279,6 +279,10 @@ public class ChallengesController : ControllerBase
             ipAddress = vm.IPAddress,
             port = vm.Port,
             terminalPort = terminalPort,
+            // Web uygulaması varsa (8080 portu) direkt URL ver
+            webUrl = challenge.DockerImage != null && (challenge.DockerImage.Contains("portal") || challenge.DockerImage.Contains("sqli") || challenge.DockerImage.Contains("web"))
+                ? $"http://{vm.IPAddress}:{vm.Port}"
+                : null,
             expiresAt = vm.ExpiresAt
         });
     }

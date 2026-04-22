@@ -20,6 +20,7 @@ public class AppDbContextNew : DbContext
     public DbSet<UserChallengeProgress> UserChallengeProgresses { get; set; }
     public DbSet<VMInstance> VMInstances { get; set; }
     public DbSet<BoardState> BoardStates { get; set; }
+    public DbSet<BoardCard> BoardCards { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -97,6 +98,12 @@ public class AppDbContextNew : DbContext
             .HasForeignKey(v => v.ChallengeId)
             .IsRequired(false)
             .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<BoardCard>()
+            .HasOne(b => b.Case)
+            .WithMany()
+            .HasForeignKey(b => b.CaseId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // Seed data
         SeedData(modelBuilder);

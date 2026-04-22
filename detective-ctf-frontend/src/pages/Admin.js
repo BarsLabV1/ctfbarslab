@@ -44,14 +44,18 @@ const Admin = () => {
   const { user }  = useAuth();
   const { showToast } = useToast();
 
-  const [tab,        setTab]        = useState('cases');   // cases | questions | evidences | users
+  const [tab,        setTab]        = useState('cases');   // cases | questions | evidences | boardcards | users
   const [stats,      setStats]      = useState({});
   const [cases,      setCases]      = useState([]);
   const [questions,  setQuestions]  = useState([]);
   const [evidences,  setEvidences]  = useState([]);
   const [users,      setUsers]      = useState([]);
   const [selCase,    setSelCase]    = useState(null);
-  const [selCaseEv,  setSelCaseEv]  = useState(null); // evidence filter
+  const [selCaseEv,  setSelCaseEv]  = useState(null);
+  const [selCaseBoard, setSelCaseBoard] = useState(null);
+  const [boardCards, setBoardCards] = useState([]);
+  const [bcModal, setBcModal] = useState(null); // null | 'new' | cardObj
+  const blankBC = { caseId:'', type:'note', title:'', content:'', fileUrl:'', externalUrl:'', dockerImage:'', posX:400, posY:400, rotation:0, color:'#bacb9a', unlockedByChallenge:'' }; // evidence filter
 
   // upload state
   const [uploading,    setUploading]    = useState(false);
@@ -73,6 +77,7 @@ const Admin = () => {
                       unlockReportTitle: '', unlockReportType: 'evidence', unlockReportContent: '',
                       unlockBoardNoteTitle: '', unlockBoardNoteText: '',
                       unlockSuspectName: '', unlockSuspectRole: '', unlockSuspectMotive: '',
+                      unlockBoardCardId: '',
                     };
   const [caseForm, setCaseForm] = useState(blankCase);
   const [qForm,    setQForm]    = useState(blankQ);
@@ -115,6 +120,16 @@ const Admin = () => {
   }, []); // eslint-disable-line
 
   useEffect(() => { if (tab === 'evidences') fetchEvidences(); }, [tab]); // eslint-disable-line
+
+  const fetchBoardCards = useCallback(async (caseId) => {
+    if (!caseId) return;
+    try {
+      const res = await api.get(`/board-cards/admin/case/${caseId}`);
+      setBoardCards(res.data);
+    } catch { showToast('Pano kartları yüklenemedi', 'error'); }
+  }, []); // eslint-disable-line
+
+  useEffect(() => { if (tab === 'boardcards' && selCaseBoard) fetchBoardCards(selCaseBoard); }, [tab, selCaseBoard]); // eslint-disable-line
 
   /* ── File upload ── */
   const handleFileUpload = async (file) => {
@@ -159,6 +174,44 @@ const Admin = () => {
       await api.delete(`/admin/evidences/${id}`);
       showToast('Delil silindi', 'success');
       fetchEvidences();
+    } catch { showToast('Silinemedi', 'error'); }
+  };
+
+  const [bcForm, setBcForm] = useState(blankBC);
+
+  const saveBoardCard = async () => {
+    const body = {
+      caseId: parseInt(bcForm.caseId || selCaseBoard),
+      type: bcForm.type,
+      title: bcForm.title,
+      content: bcForm.content || null,
+      fileUrl: bcForm.fileUrl || null,
+      externalUrl: bcForm.externalUrl || null,
+      dockerImage: bcForm.dockerImage || null,
+      posX: parseInt(bcForm.posX) || 400,
+      posY: parseInt(bcForm.posY) || 400,
+      rotation: parseFloat(bcForm.rotation) || 0,
+      color: bcForm.color || null,
+      unlockedByChallenge: bcForm.unlockedByChallenge ? parseInt(bcForm.unlockedByChallenge) : null,
+    };
+    try {
+      if (bcModal === 'new') {
+        await api.post('/board-cards', body);
+        showToast('Kart eklendi', 'success');
+      } else {
+        await api.put(`/board-cards/${bcModal.id}`, body);
+        showToast('Kart güncellendi', 'success');
+      }
+      setBcModal(null);
+      fetchBoardCards(selCaseBoard);
+    } catch (err) { showToast(err.response?.data?.message || 'Hata', 'error'); }
+  };
+
+  const deleteBoardCard = async (id) => {
+    try {
+      await api.delete(`/board-cards/${id}`);
+      showToast('Kart silindi', 'success');
+      fetchBoardCards(selCaseBoard);
     } catch { showToast('Silinemedi', 'error'); }
   };
 
@@ -297,9 +350,9 @@ const Admin = () => {
       </div>
 
       <div className="adm-tabs">
-        {['cases','questions','evidences','users'].map(t => (
+        {['cases','questions','evidences','boardcards','users'].map(t => (
           <button key={t} className={`adm-tab ${tab===t?'active':''}`} onClick={() => setTab(t)}>
-            {{ cases:'Senaryolar', questions:'Sorular', evidences:'Deliller', users:'Kullanıcılar' }[t]}
+            {{ cases:'Senaryolar', questions:'Sorular', evidences:'Deliller', boardcards:'Pano Kartları', users:'Kullanıcılar' }[t]}
           </button>
         ))}
       </div>
@@ -485,6 +538,52 @@ const Admin = () => {
           </>
         )}
 
+        {/* ── BOARD CARDS ── */}
+        {tab === 'boardcards' && (
+          <>
+            <div className="adm-section-header">
+              <h2>Pano Kartları</h2>
+              <div className="adm-section-header-right">
+                <select className="adm-select" value={selCaseBoard||''} onChange={e=>{setSelCaseBoard(e.target.value); fetchBoardCards(e.target.value);}}>
+                  <option value="">— Senaryo seç —</option>
+                  {cases.map(c=><option key={c.id} value={c.id}>{c.title}</option>)}
+                </select>
+                {selCaseBoard && (
+                  <button className="btn btn-primary btn-small" onClick={()=>{setBcForm({...blankBC, caseId:selCaseBoard}); setBcModal('new');}}>
+                    + Yeni Kart
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {!selCaseBoard ? (
+              <p className="adm-hint">Pano kartlarını görmek için senaryo seçin.</p>
+            ) : (
+              <table className="adm-table">
+                <thead>
+                  <tr><th>#</th><th>Tip</th><th>Başlık</th><th>Pozisyon</th><th>Kilit</th><th></th></tr>
+                </thead>
+                <tbody>
+                  {boardCards.map(bc => (
+                    <tr key={bc.id}>
+                      <td className="adm-id">{bc.id}</td>
+                      <td><span className="adm-cat">{bc.type}</span></td>
+                      <td className="adm-title">{bc.title}</td>
+                      <td className="adm-email">X:{bc.posX} Y:{bc.posY}</td>
+                      <td>{bc.unlockedByChallenge ? `Soru #${bc.unlockedByChallenge}` : '—'}</td>
+                      <td className="adm-actions">
+                        <button className="adm-btn-edit" onClick={()=>{setBcForm({...bc, unlockedByChallenge:bc.unlockedByChallenge||''}); setBcModal(bc);}}>Düzenle</button>
+                        <button className="adm-btn-delete" onClick={()=>deleteBoardCard(bc.id)}>Sil</button>
+                      </td>
+                    </tr>
+                  ))}
+                  {boardCards.length===0 && <tr><td colSpan={6} style={{textAlign:'center',color:'#475569',padding:32}}>Henüz kart yok</td></tr>}
+                </tbody>
+              </table>
+            )}
+          </>
+        )}
+
         {/* ── USERS ── */}
         {tab === 'users' && (
           <>
@@ -509,6 +608,139 @@ const Admin = () => {
           </>
         )}
       </div>
+
+      {/* ── Board Card Modal ── */}
+      {bcModal && (
+        <Modal title={bcModal === 'new' ? 'Yeni Pano Kartı' : 'Kartı Düzenle'} onClose={() => setBcModal(null)}>
+          <div className="adm-form">
+            <div className="adm-form-row">
+              <div>
+                <label>Tip *</label>
+                <select value={bcForm.type} onChange={e=>setBcForm(f=>({...f,type:e.target.value}))}>
+                  <option value="note">📝 Not</option>
+                  <option value="photo">🖼️ Fotoğraf</option>
+                  <option value="video">🎥 Video</option>
+                  <option value="document">📄 Belge</option>
+                  <option value="terminal">💻 Terminal (Docker)</option>
+                  <option value="website">🌐 Web Sitesi</option>
+                  <option value="audio">🎵 Ses Kaydı</option>
+                </select>
+              </div>
+              <div>
+                <label>Renk (not için)</label>
+                <input type="color" value={bcForm.color||'#bacb9a'} onChange={e=>setBcForm(f=>({...f,color:e.target.value}))} style={{height:38,padding:4}}/>
+              </div>
+            </div>
+
+            <label>Başlık *</label>
+            <input placeholder="Kart başlığı" value={bcForm.title} onChange={e=>setBcForm(f=>({...f,title:e.target.value}))}/>
+
+            {['note','document'].includes(bcForm.type) && (
+              <>
+                <label>Metin İçeriği</label>
+                <textarea rows={4} placeholder="Kart üzerinde görünecek metin" value={bcForm.content||''} onChange={e=>setBcForm(f=>({...f,content:e.target.value}))}/>
+              </>
+            )}
+
+            {['photo','video','audio','document'].includes(bcForm.type) && (
+              <>
+                <label>Dosya Yükle</label>
+                <div className="adm-file-upload-area">
+                  {bcForm.fileUrl ? (
+                    <div className="adm-file-preview">
+                      {bcForm.type === 'photo' && (
+                        <img src={(process.env.REACT_APP_API_URL||'http://localhost:5001/api').replace('/api','') + bcForm.fileUrl} alt="" className="adm-ev-media"/>
+                      )}
+                      {bcForm.type === 'video' && (
+                        <video src={(process.env.REACT_APP_API_URL||'http://localhost:5001/api').replace('/api','') + bcForm.fileUrl} controls className="adm-ev-media"/>
+                      )}
+                      {bcForm.type === 'audio' && (
+                        <audio src={(process.env.REACT_APP_API_URL||'http://localhost:5001/api').replace('/api','') + bcForm.fileUrl} controls className="adm-ev-audio"/>
+                      )}
+                      {bcForm.type === 'document' && (
+                        <div className="adm-ev-file-icon">📄<span>{bcForm.fileUrl.split('/').pop()}</span></div>
+                      )}
+                      <button className="adm-ev-clear" onClick={()=>setBcForm(f=>({...f,fileUrl:''}))}>✕ Kaldır</button>
+                    </div>
+                  ) : (
+                    <label className="adm-ev-drop-label"
+                      onDragOver={e=>e.preventDefault()}
+                      onDrop={async e=>{
+                        e.preventDefault();
+                        const file = e.dataTransfer.files[0];
+                        if (!file) return;
+                        const fd = new FormData(); fd.append('file', file);
+                        try {
+                          const res = await api.post('/admin/upload', fd, {headers:{'Content-Type':'multipart/form-data'}});
+                          setBcForm(f=>({...f, fileUrl: res.data.fileUrl}));
+                          showToast('Dosya yüklendi!', 'success');
+                        } catch { showToast('Yükleme başarısız', 'error'); }
+                      }}>
+                      <input
+                        type="file"
+                        accept={bcForm.type==='photo'?'image/*':bcForm.type==='video'?'video/*':bcForm.type==='audio'?'audio/*':'*'}
+                        style={{display:'none'}}
+                        onChange={async e=>{
+                          const file = e.target.files[0];
+                          if (!file) return;
+                          const fd = new FormData(); fd.append('file', file);
+                          try {
+                            const res = await api.post('/admin/upload', fd, {headers:{'Content-Type':'multipart/form-data'}});
+                            setBcForm(f=>({...f, fileUrl: res.data.fileUrl}));
+                            showToast('Dosya yüklendi!', 'success');
+                          } catch { showToast('Yükleme başarısız', 'error'); }
+                        }}
+                      />
+                      <div className="adm-ev-drop-icon">
+                        {bcForm.type==='photo'?'🖼️':bcForm.type==='video'?'🎥':bcForm.type==='audio'?'🎵':'📄'}
+                      </div>
+                      <div>Dosyayı sürükle veya <span>seç</span></div>
+                      <div className="adm-ev-drop-hint">
+                        {bcForm.type==='photo'?'JPG, PNG, GIF, WEBP':bcForm.type==='video'?'MP4, AVI, MOV, WEBM':bcForm.type==='audio'?'MP3, WAV, OGG, M4A':'PDF, DOC, TXT, LOG'} — max 200MB
+                      </div>
+                    </label>
+                  )}
+                </div>
+              </>
+            )}
+
+            {bcForm.type === 'website' && (
+              <>
+                <label>Web Sitesi URL</label>
+                <input placeholder="http://192.168.1.100:8080" value={bcForm.externalUrl||''} onChange={e=>setBcForm(f=>({...f,externalUrl:e.target.value}))}/>
+              </>
+            )}
+
+            {bcForm.type === 'terminal' && (
+              <>
+                <label>Docker Image</label>
+                <input placeholder="detectivectf/ssh-target:latest" value={bcForm.dockerImage||''} onChange={e=>setBcForm(f=>({...f,dockerImage:e.target.value}))}/>
+              </>
+            )}
+
+            <div className="adm-section-divider">📍 Pano Pozisyonu</div>
+            <div className="adm-form-row">
+              <div><label>X Koordinatı</label><input type="number" value={bcForm.posX} onChange={e=>setBcForm(f=>({...f,posX:e.target.value}))}/></div>
+              <div><label>Y Koordinatı</label><input type="number" value={bcForm.posY} onChange={e=>setBcForm(f=>({...f,posY:e.target.value}))}/></div>
+              <div><label>Rotasyon (°)</label><input type="number" min={-10} max={10} step={0.5} value={bcForm.rotation} onChange={e=>setBcForm(f=>({...f,rotation:e.target.value}))}/></div>
+            </div>
+
+            <div className="adm-section-divider">🔒 Kilit</div>
+            <label>Hangi soru çözülünce açılsın? (boş = baştan açık)</label>
+            <select value={bcForm.unlockedByChallenge||''} onChange={e=>setBcForm(f=>({...f,unlockedByChallenge:e.target.value}))}>
+              <option value="">Baştan açık</option>
+              {questions.filter(q=>String(q.caseId||selCaseBoard)===String(selCaseBoard)).map(q=>(
+                <option key={q.id} value={q.id}>#{q.order} {q.title}</option>
+              ))}
+            </select>
+
+            <div className="adm-form-actions">
+              <button className="btn btn-primary" onClick={saveBoardCard}>Kaydet</button>
+              <button className="btn btn-secondary" onClick={()=>setBcModal(null)}>İptal</button>
+            </div>
+          </div>
+        </Modal>
+      )}
 
       {/* ── Case Modal ── */}
       {caseModal && (
@@ -602,6 +834,18 @@ const Admin = () => {
 
             {/* ── Çözülünce açılan içerik ── */}
             <div className="adm-section-divider">🔓 Çözülünce Açılacak İçerik</div>
+
+            {/* Pano kartı aç */}
+            <div className="adm-unlock-section">
+              <div className="adm-unlock-label">🗂️ Pano Kartı Aç (önceden eklenen)</div>
+              <select value={qForm.unlockBoardCardId||''} onChange={e=>setQForm(f=>({...f,unlockBoardCardId:e.target.value}))}>
+                <option value="">— Kart seçme (opsiyonel) —</option>
+                {boardCards.filter(bc=>String(bc.caseId)===String(qForm.caseId||selCase)).map(bc=>(
+                  <option key={bc.id} value={bc.id}>{bc.type.toUpperCase()} — {bc.title}</option>
+                ))}
+              </select>
+              <p style={{fontSize:11,color:'#475569',marginTop:4}}>Seçilen kart bu soru çözülünce panoda açılır (kilit kalkar)</p>
+            </div>
 
             <div className="adm-unlock-section">
               <div className="adm-unlock-label">📄 Rapor Belgesi</div>

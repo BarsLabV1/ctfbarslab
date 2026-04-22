@@ -7,7 +7,7 @@ namespace DetectiveCTF.API.Services;
 public class DockerService
 {
     private readonly ILogger<DockerService> _logger;
-    private const string HOST_IP = "127.0.0.1"; // Değiştir: sunucu IP'si
+    private const string HOST_IP = "10.10.74.179"; // Senin PC'nin IP'si
 
     public DockerService(ILogger<DockerService> logger)
     {
@@ -80,19 +80,42 @@ public class DockerService
                 return null;
             }
 
-            _logger.LogInformation("Container başlatıldı: {Name} → {IP}:{Port}", containerName, HOST_IP, hostPort);
+            // Container'ın başlaması için bekle
+            await Task.Delay(2000);
+
+            // Tüm port mappingleri al
+            var allPorts = await RunDockerCommand($"port {containerId}");
+            // "8080/tcp -> 0.0.0.0:32773" formatını parse et
+            int? webPort = null;
+            int? sshPort = null;
+            foreach (var line in allPorts.Split('\n'))
+            {
+                if (line.Contains("8080") && line.Contains("->"))
+                {
+                    var p = line.Split("->").Last().Trim().Split(':').Last().Trim();
+                    if (int.TryParse(p, out var wp)) webPort = wp;
+                }
+                if (line.Contains("22/") && line.Contains("->"))
+                {
+                    var p = line.Split("->").Last().Trim().Split(':').Last().Trim();
+                    if (int.TryParse(p, out var sp)) sshPort = sp;
+                }
+            }
+
+            var finalPort = webPort ?? sshPort ?? hostPort;
+            _logger.LogInformation("Container: {Name} web:{WebPort} ssh:{SshPort}", containerName, webPort, sshPort);
 
             return new VMInstance
             {
-                ChallengeId  = challenge.Id,
-                UserId       = userId,
-                TeamId       = teamId,
-                ContainerId  = containerId,
+                ChallengeId   = challenge.Id,
+                UserId        = userId,
+                TeamId        = teamId,
+                ContainerId   = containerId,
                 ContainerName = containerName,
-                IPAddress    = HOST_IP,
-                Port         = hostPort,
-                Status       = "running",
-                ExpiresAt    = DateTime.UtcNow.AddHours(2)
+                IPAddress     = HOST_IP,
+                Port          = finalPort,
+                Status        = "running",
+                ExpiresAt     = DateTime.UtcNow.AddHours(2)
             };
         }
         catch (Exception ex)
