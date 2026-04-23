@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="DetectiveCTF.API/DetectiveCTF.API.csproj" />
+  <Project Path="DetectiveCTF.Application/DetectiveCTF.Application.csproj" />
+  <Project Path="DetectiveCTF.Core/DetectiveCTF.Core.csproj" />
+  <Project Path="DetectiveCTF.Infrastructure/DetectiveCTF.Infrastructure.csproj" />
+</Solution>

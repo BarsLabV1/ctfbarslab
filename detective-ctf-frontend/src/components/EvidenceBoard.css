@@ -1,0 +1,629 @@
+/* ── Wrapper ── */
+.eb-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  margin: 20px 0;
+}
+
+/* ── Toolbar ── */
+.eb-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #1e1b14;
+  padding: 10px 18px;
+  border-bottom: 2px solid #3d2b1f;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.eb-toolbar-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #d4a574;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.eb-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.eb-btn {
+  background: rgba(212,165,116,0.15);
+  border: 1px solid rgba(212,165,116,0.35);
+  color: #d4a574;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.eb-btn:hover { background: rgba(212,165,116,0.25); }
+
+.eb-connecting-hint {
+  font-size: 12px;
+  color: #f87171;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.eb-connecting-hint button {
+  background: rgba(248,113,113,0.15);
+  border: 1px solid rgba(248,113,113,0.3);
+  color: #f87171;
+  padding: 3px 10px;
+  border-radius: 5px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* ── Board ── */
+.eb-board {
+  position: relative;
+  min-height: 580px;
+  background: linear-gradient(135deg, #b8864e 0%, #c9975a 40%, #b8864e 100%);
+  overflow: hidden;
+  cursor: default;
+  user-select: none;
+}
+
+.eb-cork {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(ellipse at 15% 25%, rgba(0,0,0,0.12) 1px, transparent 1px),
+    radial-gradient(ellipse at 55% 65%, rgba(0,0,0,0.10) 1px, transparent 1px),
+    radial-gradient(ellipse at 80% 15%, rgba(0,0,0,0.08) 1px, transparent 1px),
+    radial-gradient(ellipse at 35% 80%, rgba(0,0,0,0.10) 1px, transparent 1px);
+  background-size: 48px 48px, 72px 72px, 56px 56px, 64px 64px;
+  pointer-events: none;
+}
+
+/* ── SVG strings ── */
+.eb-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.eb-string {
+  stroke: #c0392b;
+  stroke-width: 2;
+  opacity: 0.75;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
+}
+
+.eb-string-del {
+  fill: rgba(30,27,20,0.7);
+  cursor: pointer;
+  pointer-events: all;
+  transition: fill 0.15s;
+}
+.eb-string-del:hover { fill: #c0392b; }
+
+.eb-string-del-txt {
+  fill: #fff;
+  font-size: 9px;
+  text-anchor: middle;
+  pointer-events: all;
+  cursor: pointer;
+}
+
+/* ── Note ── */
+.eb-note {
+  position: absolute;
+  width: 190px;
+  min-height: 130px;
+  padding: 14px 12px 32px;
+  border-radius: 2px;
+  box-shadow: 3px 4px 12px rgba(0,0,0,0.35), inset 0 0 40px rgba(0,0,0,0.04);
+  cursor: grab;
+  z-index: 3;
+  font-family: 'Courier New', monospace;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+.eb-note:active { cursor: grabbing; }
+.eb-note:hover  { box-shadow: 5px 6px 20px rgba(0,0,0,0.5); z-index: 10; }
+
+.eb-note.connecting {
+  outline: 3px solid #c0392b;
+  z-index: 12;
+}
+.eb-note.connectable {
+  outline: 2px dashed #c0392b;
+  cursor: crosshair;
+}
+
+/* ── Pin ── */
+.eb-pin {
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 18px;
+  height: 18px;
+  background: radial-gradient(circle at 35% 35%, #e74c3c, #922b21);
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4), inset 0 -2px 3px rgba(0,0,0,0.3);
+  z-index: 4;
+}
+.eb-pin::after {
+  content: '';
+  position: absolute;
+  top: 30%;
+  left: 30%;
+  width: 5px;
+  height: 5px;
+  background: rgba(255,255,255,0.35);
+  border-radius: 50%;
+}
+
+.eb-note-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 6px;
+  text-decoration: underline;
+  word-break: break-word;
+}
+
+.eb-note-text {
+  font-size: 11px;
+  color: #333;
+  line-height: 1.5;
+  word-break: break-word;
+  max-height: 80px;
+  overflow: hidden;
+}
+
+/* ── Note action buttons ── */
+.eb-note-btns {
+  position: absolute;
+  bottom: 5px;
+  right: 6px;
+  display: flex;
+  gap: 3px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.eb-note:hover .eb-note-btns,
+.eb-suspect:hover .eb-note-btns { opacity: 1; }
+
+.eb-note-btns button {
+  background: rgba(0,0,0,0.12);
+  border: none;
+  border-radius: 4px;
+  padding: 2px 5px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.eb-note-btns button:hover { background: rgba(0,0,0,0.25); }
+
+/* ── Suspect card ── */
+.eb-suspect {
+  position: absolute;
+  width: 140px;
+  background: #f5f0e8;
+  border: 2px solid #2c2c2c;
+  border-radius: 2px;
+  padding: 10px 10px 32px;
+  box-shadow: 3px 4px 12px rgba(0,0,0,0.4);
+  cursor: grab;
+  z-index: 3;
+  font-family: 'Courier New', monospace;
+  transform: rotate(-1.5deg);
+  transition: box-shadow 0.15s;
+}
+.eb-suspect:nth-child(even) { transform: rotate(1.5deg); }
+.eb-suspect:active { cursor: grabbing; }
+.eb-suspect:hover  { box-shadow: 5px 6px 20px rgba(0,0,0,0.5); z-index: 10; }
+
+.eb-suspect.connecting  { outline: 3px solid #c0392b; z-index: 12; }
+.eb-suspect.connectable { outline: 2px dashed #c0392b; cursor: crosshair; }
+
+.eb-suspect-pin {
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 16px;
+  background: radial-gradient(circle at 35% 35%, #e74c3c, #922b21);
+  border-radius: 50%;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+}
+
+.eb-suspect-avatar {
+  width: 60px;
+  height: 60px;
+  background: #ccc;
+  border: 2px solid #2c2c2c;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 700;
+  color: #555;
+  margin: 0 auto 8px;
+}
+
+.eb-suspect-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1a1a1a;
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.eb-suspect-role {
+  font-size: 10px;
+  color: #555;
+  text-align: center;
+  margin-bottom: 3px;
+}
+
+.eb-suspect-motive {
+  font-size: 10px;
+  color: #c0392b;
+  font-style: italic;
+  text-align: center;
+  border-top: 1px dashed #ccc;
+  padding-top: 4px;
+  margin-top: 4px;
+}
+
+/* ── Empty state ── */
+.eb-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(0,0,0,0.25);
+  font-size: 15px;
+  font-style: italic;
+  font-family: 'Courier New', monospace;
+  pointer-events: none;
+}
+
+/* ── Modal ── */
+.eb-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9000;
+}
+
+.eb-modal {
+  background: #0f172a;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px;
+  padding: 24px;
+  width: 380px;
+  max-width: 95vw;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+  animation: ebIn 0.2s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+@keyframes ebIn {
+  from { transform: scale(0.95) translateY(10px); opacity: 0; }
+  to   { transform: scale(1)    translateY(0);    opacity: 1; }
+}
+
+.eb-modal h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #e2e8f0;
+  margin: 0;
+}
+
+.eb-modal input,
+.eb-modal textarea {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  color: #e2e8f0;
+  padding: 9px 12px;
+  font-size: 14px;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+  resize: vertical;
+}
+.eb-modal input:focus,
+.eb-modal textarea:focus { outline: none; border-color: #667eea; }
+
+.eb-modal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.eb-btn-primary {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border: none;
+  color: #fff;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.eb-btn-primary:hover { opacity: 0.9; }
+
+.eb-btn-sec {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #94a3b8;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.eb-btn-sec:hover { background: rgba(255,255,255,0.1); }
+
+/* ── Connection indicator ── */
+.eb-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.eb-conn-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.eb-conn-dot.online  { background: #34d399; box-shadow: 0 0 6px #34d399; }
+.eb-conn-dot.offline { background: #f87171; }
+
+.eb-conn-label {
+  font-size: 11px;
+  color: #64748b;
+}
+
+/* ── View popups ── */
+.eb-view-modal {
+  position: relative;
+  width: 680px;
+  max-width: 92vw;
+  min-height: 300px;
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 50px 48px 40px;
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+  box-shadow: 8px 10px 40px rgba(0,0,0,0.6);
+  animation: ebIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+.eb-view-pin {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 22px;
+  height: 22px;
+  background: radial-gradient(circle at 35% 35%, #e74c3c, #922b21);
+  border-radius: 50%;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+  z-index: 5;
+}
+
+.eb-view-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0,0,0,0.1);
+  border: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 14px;
+  color: #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.eb-view-close:hover { background: rgba(0,0,0,0.2); }
+
+.eb-view-title {
+  font-size: 22px;
+  font-weight: 900;
+  color: #1a1a1a;
+  text-decoration: underline;
+  margin-bottom: 20px;
+  line-height: 1.3;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.eb-view-text {
+  font-size: 15px;
+  color: #222;
+  line-height: 2;
+  white-space: pre-line;
+}
+
+/* ── View suspect popup ── */
+.eb-view-suspect-modal {
+  position: relative;
+  width: 360px;
+  background: #f5f0e8;
+  border: 3px solid #2c2c2c;
+  border-radius: 3px;
+  padding: 50px 32px 36px;
+  font-family: 'Courier New', monospace;
+  box-shadow: 6px 8px 24px rgba(0,0,0,0.5);
+  text-align: center;
+  animation: ebIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+.eb-view-suspect-avatar {
+  width: 100px;
+  height: 100px;
+  background: #ccc;
+  border: 3px solid #2c2c2c;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 52px;
+  font-weight: 700;
+  color: #555;
+  margin: 0 auto 20px;
+}
+
+.eb-view-suspect-name {
+  font-size: 24px;
+  font-weight: 900;
+  color: #1a1a1a;
+  margin-bottom: 10px;
+}
+
+.eb-view-suspect-role {
+  font-size: 15px;
+  color: #555;
+  margin-bottom: 14px;
+}
+
+.eb-view-suspect-motive {
+  font-size: 14px;
+  color: #c0392b;
+  font-style: italic;
+  border-top: 1px dashed #ccc;
+  padding-top: 14px;
+  margin-top: 10px;
+  line-height: 1.6;
+}
+
+/* ── Rapor kartı (panoda küçük) ── */
+.eb-report-card {
+  position: absolute;
+  width: 160px;
+  background: #f5f0e8;
+  border: 2px solid #2c2c2c;
+  border-radius: 2px;
+  padding: 28px 16px 18px;
+  font-family: 'Courier New', monospace;
+  text-align: center;
+  cursor: pointer;
+  z-index: 3;
+  box-shadow: 3px 4px 12px rgba(0,0,0,0.35);
+  transform: rotate(1deg);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.eb-report-card:hover {
+  transform: rotate(0deg) scale(1.05);
+  box-shadow: 5px 6px 20px rgba(0,0,0,0.5);
+}
+
+.eb-report-pin {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 18px;
+  height: 18px;
+  background: radial-gradient(circle at 35% 35%, #e74c3c, #922b21);
+  border-radius: 50%;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+}
+
+.eb-report-stamp {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 8px;
+  font-weight: 900;
+  color: rgba(180,0,0,0.5);
+  border: 1.5px solid rgba(180,0,0,0.4);
+  padding: 1px 5px;
+  letter-spacing: 2px;
+  transform: rotate(10deg);
+}
+
+.eb-report-badge {
+  font-size: 28px;
+  margin-bottom: 6px;
+}
+
+.eb-report-title {
+  font-size: 10px;
+  font-weight: 900;
+  color: #1a1a1a;
+  letter-spacing: 1px;
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+
+.eb-report-case {
+  font-size: 9px;
+  color: #555;
+  margin-bottom: 8px;
+}
+
+.eb-report-hint {
+  font-size: 9px;
+  color: #888;
+  font-style: italic;
+  border-top: 1px dashed #ccc;
+  padding-top: 6px;
+}
+
+/* ── Rapor popup ── */
+.eb-report-overlay {
+  align-items: flex-start;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.eb-report-popup {
+  position: relative;
+  width: 100%;
+  max-width: 920px;
+  margin: 0 auto;
+}
+
+.eb-report-popup-close {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  background: rgba(0,0,0,0.7);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #e2e8f0;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.eb-report-popup-close:hover { background: rgba(0,0,0,0.9); }

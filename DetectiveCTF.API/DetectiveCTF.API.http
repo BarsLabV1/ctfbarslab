@@ -1,0 +1,6 @@
+@DetectiveCTF.API_HostAddress = http://localhost:5188
+
+GET {{DetectiveCTF.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

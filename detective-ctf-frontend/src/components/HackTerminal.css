@@ -1,0 +1,171 @@
+.terminal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.terminal-window {
+  background: #0a0a0a;
+  border: 2px solid #333;
+  border-radius: 10px;
+  width: 100%;
+  max-width: 800px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.terminal-header {
+  background: #1a1a1a;
+  padding: 15px 20px;
+  border-bottom: 1px solid #333;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 8px 8px 0 0;
+}
+
+.terminal-title {
+  color: #00ff00;
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+}
+
+.terminal-close {
+  background: #e53e3e;
+  color: white;
+  border: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.terminal-close:hover {
+  background: #c53030;
+  transform: scale(1.1);
+}
+
+.terminal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.terminal-info {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 5px;
+  padding: 10px;
+  margin-bottom: 15px;
+  font-family: 'Courier New', monospace;
+  color: #00ff00;
+  font-size: 14px;
+}
+
+.terminal-info div {
+  margin: 5px 0;
+}
+
+.terminal-output {
+  background: #000;
+  border: 1px solid #333;
+  border-radius: 5px;
+  padding: 15px;
+  min-height: 200px;
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 15px;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+}
+
+.output-line {
+  margin: 5px 0;
+  line-height: 1.5;
+}
+
+.output-timestamp {
+  color: #666;
+  font-size: 12px;
+}
+
+.output-normal {
+  color: #e0e0e0;
+}
+
+.output-info {
+  color: #4299e1;
+}
+
+.output-success {
+  color: #48bb78;
+}
+
+.output-error {
+  color: #fc8181;
+}
+
+.output-data {
+  color: #ffd700;
+  white-space: pre-wrap;
+  background: #1a1a1a;
+  padding: 10px;
+  border-radius: 5px;
+  margin: 5px 0;
+}
+
+.terminal-input-form {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 5px;
+  padding: 15px;
+}
+
+.input-group {
+  margin-bottom: 15px;
+}
+
+.input-group label {
+  display: block;
+  color: #00ff00;
+  font-family: 'Courier New', monospace;
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+
+.input-group input {
+  background: #000;
+  border: 1px solid #333;
+  color: #00ff00;
+  font-family: 'Courier New', monospace;
+}
+
+.input-group input:focus {
+  border-color: #00ff00;
+  box-shadow: 0 0 0 2px rgba(0, 255, 0, 0.1);
+}
+
+.terminal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.terminal-actions .btn {
+  flex: 1;
+}

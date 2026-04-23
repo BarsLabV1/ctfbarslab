@@ -1,0 +1,51 @@
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: detectivectf-db
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${SA_PASSWORD}"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    volumes:
+      - db_data:/var/opt/mssql
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: DetectiveCTF.API/Dockerfile
+    container_name: detectivectf-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Production"
+      ASPNETCORE_URLS: "http://+:5001"
+      ConnectionStrings__DefaultConnection: "Server=db,1433;Database=DetectiveCTFDb;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True;"
+      Jwt__Key: "${JWT_KEY}"
+      Jwt__Issuer: "DetectiveCTF"
+      Jwt__Audience: "DetectiveCTF"
+    depends_on:
+      - db
+    volumes:
+      - uploads_data:/app/wwwroot/uploads
+      - /var/run/docker.sock:/var/run/docker.sock
+    expose:
+      - "5001"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./detective-ctf-frontend
+      dockerfile: Dockerfile
+      args:
+        REACT_APP_API_URL: "/api"
+    container_name: detectivectf-frontend
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+    restart: unless-stopped
+
+volumes:
+  db_data:
+  uploads_data:
