@@ -75,6 +75,9 @@ public class TeamService : ITeamService
         if (team.Members.Count >= team.MaxMembers)
             throw new InvalidOperationException("Takım dolu (maksimum 4 kişi)");
 
+        if (team.Members.Any(m => m.Role == request.Role))
+            throw new InvalidOperationException($"'{request.Role}' rolü zaten alınmış, farklı bir rol seçin");
+
         var member = new TeamMember
         {
             TeamId = team.Id,
@@ -196,8 +199,46 @@ public class TeamService : ITeamService
                 m.User.Username,
                 m.Role,
                 m.UserId == team.LeaderId
-            )).ToList()
+            )).ToList(),
+            userId,
+            team.Members.Select(m => m.Role).ToList()
         );
+    }
+
+    public async Task<TeamActionResponse> LeaveTeamAsync(int userId)
+    {
+        var membership = await _context.TeamMembers
+            .Include(tm => tm.Team)
+            .FirstOrDefaultAsync(tm => tm.UserId == userId);
+
+        if (membership == null)
+            throw new InvalidOperationException("Zaten bir takımda değilsiniz");
+
+        var team = membership.Team;
+
+        // Lider çıkıyorsa takımı dağıt
+        if (team.LeaderId == userId)
+        {
+            var allMembers = await _context.TeamMembers.Where(m => m.TeamId == team.Id).ToListAsync();
+            _context.TeamMembers.RemoveRange(allMembers);
+            team.IsActive = false;
+            await _context.SaveChangesAsync();
+            return new TeamActionResponse("Takım lağvedildi");
+        }
+
+        _context.TeamMembers.Remove(membership);
+        await _context.SaveChangesAsync();
+        return new TeamActionResponse("Takımdan ayrıldınız");
+    }
+
+    public async Task<List<string>> GetTakenRolesAsync(string inviteCode)
+    {
+        var team = await _context.Teams
+            .Include(t => t.Members)
+            .FirstOrDefaultAsync(t => t.InviteCode == inviteCode.ToUpper().Trim());
+
+        if (team == null) return new List<string>();
+        return team.Members.Select(m => m.Role).ToList();
     }
 
     private async Task<string> GenerateInviteCodeAsync()

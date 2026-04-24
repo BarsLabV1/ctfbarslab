@@ -1,123 +1,209 @@
-.leaderboard-header {
-  text-align: center;
-  margin-bottom: 40px;
+.leaderboard-page {
+  min-height: 100vh;
+  background: #0a0c0f;
+  padding: 40px;
 }
 
-.leaderboard-header h1 {
-  font-size: 48px;
-  margin-bottom: 10px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.lb-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 
-.leaderboard-header p {
-  color: #888;
-  font-size: 18px;
+.lb-title {
+  font-family: var(--font-title);
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--text-primary);
+  letter-spacing: 4px;
 }
 
-.leaderboard-table {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
+.lb-subtitle {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+  margin-top: 6px;
+}
+
+/* Tabs */
+.lb-tabs {
+  display: flex;
+  gap: 2px;
+}
+
+.lb-tab {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  padding: 8px 20px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.12);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.lb-tab.active {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.25);
+  color: var(--text-primary);
+}
+
+.lb-tab:hover:not(.active) {
+  border-color: rgba(255,255,255,0.2);
+  color: var(--text-secondary);
+}
+
+/* Table */
+.lb-table {
+  background: #111318;
+  border: 1px solid rgba(255,255,255,0.07);
   overflow: hidden;
   max-width: 900px;
   margin: 0 auto;
 }
 
-.table-header {
+.lb-table-head {
   display: grid;
-  grid-template-columns: 100px 1fr 200px 200px;
-  gap: 20px;
-  padding: 20px;
-  background: rgba(102, 126, 234, 0.2);
-  font-weight: bold;
-  color: #667eea;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  grid-template-columns: 80px 60px 1fr 160px 160px 80px;
+  gap: 0;
+  padding: 12px 20px;
+  background: rgba(255,255,255,0.03);
+  border-bottom: 1px solid rgba(255,255,255,0.07);
 }
 
-.table-row {
+.lb-table-head span {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.lb-row {
   display: grid;
-  grid-template-columns: 100px 1fr 200px 200px;
-  gap: 20px;
-  padding: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  transition: all 0.3s ease;
+  grid-template-columns: 80px 60px 1fr 160px 160px 80px;
+  gap: 0;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  align-items: center;
+  transition: background 0.15s;
 }
 
-.table-row:hover {
-  background: rgba(102, 126, 234, 0.1);
+.lb-row:hover { background: rgba(255,255,255,0.02); }
+.lb-row:last-child { border-bottom: none; }
+
+.lb-row-top { background: rgba(245,197,24,0.03); }
+
+/* Rank */
+.lb-rank {
+  font-family: var(--font-title);
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--text-muted);
+  font-style: italic;
 }
 
-.table-row:last-child {
-  border-bottom: none;
-}
+.lb-rank-1 { color: var(--accent-yellow); }
+.lb-rank-2 { color: #c0c0c0; }
+.lb-rank-3 { color: #cd7f32; }
 
-.top-three {
-  background: rgba(255, 215, 0, 0.05);
-}
-
-.col-rank {
+/* Avatar */
+.lb-avatar {
+  width: 40px; height: 40px;
+  background: linear-gradient(135deg, #1a1d24, #2a2d34);
+  border: 1px solid rgba(255,255,255,0.1);
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 16px;
+  color: var(--text-muted);
+  overflow: hidden;
 }
 
-.rank-badge {
-  font-size: 24px;
-  font-weight: bold;
+/* Name */
+.lb-name-col {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.col-username {
+.lb-username {
+  font-family: var(--font-title);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 2px;
+}
+
+/* Clearance */
+.lb-clearance {
   display: flex;
   align-items: center;
 }
 
-.username-text {
-  font-size: 18px;
-  font-weight: 500;
+.clearance-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 3px 10px;
 }
 
-.col-cases {
-  display: flex;
-  align-items: center;
-  color: #888;
+.clearance-critical { background: rgba(255,59,59,0.15);  color: #ff3b3b; border: 1px solid rgba(255,59,59,0.3); }
+.clearance-high     { background: rgba(0,212,255,0.12);  color: #00d4ff; border: 1px solid rgba(0,212,255,0.25); }
+.clearance-medium   { background: rgba(255,255,255,0.07); color: #aaa;   border: 1px solid rgba(255,255,255,0.12); }
+
+/* Points */
+.lb-points {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 700;
+  color: #00d4ff;
+  letter-spacing: 1px;
 }
 
-.col-score {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
+/* Status */
+.lb-status {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--accent-green);
+  letter-spacing: 1px;
 }
 
-.score-value {
-  color: #ffd700;
-  font-weight: bold;
-  font-size: 18px;
+/* Footer */
+.lb-footer {
+  text-align: center;
+  padding: 20px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.lb-footer:hover { color: var(--text-secondary); }
+
+.no-data {
+  text-align: center;
+  padding: 60px 20px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+  letter-spacing: 2px;
 }
 
 @media (max-width: 768px) {
-  .table-header,
-  .table-row {
-    grid-template-columns: 60px 1fr 80px;
-    gap: 10px;
-  }
-
-  .col-cases {
-    display: none;
-  }
-
-  .rank-badge {
-    font-size: 18px;
-  }
-
-  .username-text {
-    font-size: 16px;
-  }
-
-  .score-value {
-    font-size: 16px;
-  }
+  .leaderboard-page { padding: 20px 16px; }
+  .lb-table-head,
+  .lb-row { grid-template-columns: 50px 44px 1fr 100px; }
+  .lb-clearance, .lb-status { display: none; }
+  .lb-header { flex-direction: column; align-items: flex-start; gap: 16px; }
 }

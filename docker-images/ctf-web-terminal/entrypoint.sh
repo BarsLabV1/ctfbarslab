@@ -20,5 +20,5 @@ Bağlanmak için: ssh ctfuser@${TARGET_IP} -p ${TARGET_PORT}
 
 EOF
 
-# ttyd web terminal başlat
-exec ttyd -p 7681 -W bash
+# ttyd web terminal başlat — reconnect destekli
+exec ttyd -p 7681 -W --writable bash

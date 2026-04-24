@@ -3,6 +3,7 @@ using DetectiveCTF.Application.DTOs;
 using DetectiveCTF.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace DetectiveCTF.API.Controllers;
 
@@ -28,6 +29,20 @@ public class ChallengesController : ControllerBase
     {
         var result = await _challengeService.GetChallengesByCaseAsync(caseId, GetUserId());
         return Ok(result);
+    }
+
+    [HttpGet("case/{caseId}/evidences")]
+    public async Task<IActionResult> GetCaseEvidences(int caseId,
+        [FromServices] DetectiveCTF.Infrastructure.Persistence.AppDbContext db)
+    {
+        var evidences = await db.Evidences
+            .Where(e => e.Challenge.CaseId == caseId)
+            .Select(e => new {
+                e.Id, e.ChallengeId, e.Title, e.Type, e.FileUrl, e.Description, e.Order
+            })
+            .OrderBy(e => e.ChallengeId).ThenBy(e => e.Order)
+            .ToListAsync();
+        return Ok(evidences);
     }
 
     [HttpGet("{id}")]

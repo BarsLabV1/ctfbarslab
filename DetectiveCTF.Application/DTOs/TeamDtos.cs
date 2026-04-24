@@ -36,7 +36,9 @@ public record MyTeamDto(
     bool IsLeader,
     string? InviteCode,
     string? MyRole,
-    List<TeamMemberDto>? Members
+    List<TeamMemberDto>? Members,
+    int? MyUserId = null,
+    List<string>? TakenRoles = null
 );
 
 public record TeamActionResponse(

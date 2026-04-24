@@ -940,3 +940,191 @@
   text-align: center;
   max-width: 600px;
 }
+
+/* ── Play page layout ── */
+.play-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background: #0a0c0f;
+}
+
+.play-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── Panolar (tam ekran) ── */
+.play-boards {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Pano sekme geçişi ── */
+.play-board-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  background: #0a0c0f;
+  flex-shrink: 0;
+}
+
+.play-board-tab {
+  padding: 10px 24px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.play-board-tab:hover {
+  color: var(--text-secondary);
+  background: rgba(255,255,255,0.03);
+}
+
+.play-board-tab.active {
+  color: var(--accent-yellow);
+  border-bottom-color: var(--accent-yellow);
+  background: rgba(245,197,24,0.04);
+}
+
+/* VM butonları */
+.vm-start-btn {
+  width: 100%;
+  padding: 10px;
+  background: var(--accent-yellow);
+  color: #000;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  margin-top: 8px;
+}
+
+.vm-start-btn:hover { opacity: 0.85; }
+.vm-start-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.vm-active {
+  background: rgba(0,255,136,0.05);
+  border: 1px solid rgba(0,255,136,0.15);
+  padding: 12px;
+  margin-top: 8px;
+}
+
+.vm-active-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.vm-active-dot {
+  width: 8px; height: 8px;
+  background: var(--accent-green);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--accent-green);
+  animation: pulse 2s infinite;
+}
+
+.vm-active-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--accent-green);
+  letter-spacing: 1px;
+  flex: 1;
+}
+
+.vm-stop-btn {
+  background: rgba(255,59,59,0.1);
+  border: 1px solid rgba(255,59,59,0.25);
+  color: #ff3b3b;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.vm-stop-btn:hover { background: rgba(255,59,59,0.2); }
+
+.vm-conn-info { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+
+.vm-conn-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.vm-conn-row code {
+  color: var(--accent-green);
+  background: rgba(0,0,0,0.3);
+  padding: 2px 8px;
+}
+
+.vm-web-btn, .vm-terminal-btn {
+  display: block;
+  padding: 8px 12px;
+  background: rgba(0,212,255,0.1);
+  border: 1px solid rgba(0,212,255,0.2);
+  color: #00d4ff;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-decoration: none;
+  text-align: center;
+  transition: all 0.2s;
+  letter-spacing: 1px;
+}
+
+.vm-web-btn:hover, .vm-terminal-btn:hover { background: rgba(0,212,255,0.2); }
+
+.vm-kali-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+
+.vm-kali-btn {
+  background: rgba(255,59,59,0.1);
+  border: 1px solid rgba(255,59,59,0.2);
+  color: #ff3b3b;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.vm-kali-btn:hover { background: rgba(255,59,59,0.2); }
+
+.vm-kali-open-btn {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--accent-yellow);
+  text-decoration: none;
+  padding: 4px 8px;
+  border: 1px solid rgba(245,197,24,0.2);
+}
+
+.vm-expires {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
+@media (max-width: 900px) {
+  .play-body { flex-direction: column; }
+  .play-questions { width: 100%; min-width: unset; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.07); max-height: 40vh; }
+}

@@ -6,8 +6,9 @@ using System.Security.Claims;
 
 namespace DetectiveCTF.API.Controllers;
 
-[ApiController]
-[Route("api/cases")]
+// Bu controller devre dışı bırakıldı — CasesController kullanılıyor
+// [ApiController]
+// [Route("api/cases")]
 [Authorize]
 public class CasesControllerNew : ControllerBase
 {

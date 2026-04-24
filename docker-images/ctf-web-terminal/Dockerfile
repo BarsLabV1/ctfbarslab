@@ -13,14 +13,12 @@ RUN apt-get update && apt-get install -y \
     bash \
     libjson-c5 \
     libssl3 \
+    libwebsockets-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # ttyd binary
 RUN curl -fsSL https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.x86_64 \
     -o /usr/local/bin/ttyd && chmod +x /usr/local/bin/ttyd
 
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
 EXPOSE 7681
-ENTRYPOINT ["/entrypoint.sh"]
+CMD ["ttyd", "-p", "7681", "-W", "bash"]

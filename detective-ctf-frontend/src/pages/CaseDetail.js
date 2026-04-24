@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { casesAPI } from '../services/api';
 import CrimeSceneReport from '../components/CrimeSceneReport';
-import EvidenceBoard from '../components/EvidenceBoard';
 import './CaseDetail.css';
 
 const DIFFICULTY_MAP = {
@@ -19,7 +18,6 @@ const CaseDetail = () => {
   const [caseData, setCaseData]   = useState(null);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState('');
-  const [activeTab, setActiveTab] = useState('report');
 
   useEffect(() => { fetchCase(); }, [id]); // eslint-disable-line
 
@@ -79,22 +77,12 @@ const CaseDetail = () => {
 
       {/* Tabs */}
       <div className="case-tabs">
-        <button className={`tab-btn ${activeTab === 'report' ? 'active' : ''}`} onClick={() => setActiveTab('report')}>
+        <button className="tab-btn active">
           📄 Olay Yeri Raporu
-        </button>
-        <button className={`tab-btn ${activeTab === 'board' ? 'active' : ''}`} onClick={() => setActiveTab('board')}>
-          🔍 Dedektif Panosu
         </button>
       </div>
 
-      {activeTab === 'report' && <CrimeSceneReport caseData={caseData} />}
-      {activeTab === 'board'  && (
-        <EvidenceBoard
-          clues={caseData.availableClues || []}
-          suspects={[]}
-          connections={[]}
-        />
-      )}
+      <CrimeSceneReport caseData={caseData} />
     </div>
   );
 };

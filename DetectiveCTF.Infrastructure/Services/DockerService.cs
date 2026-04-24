@@ -9,7 +9,7 @@ public class DockerService
     private readonly ILogger<DockerService> _logger;
 
     // bunu kendi makine IP'ne göre değiştir
-    private const string HOST_IP = "127.0.0.1";
+    private const string HOST_IP = "10.10.74.179";
 
     public DockerService(ILogger<DockerService> logger)
     {

@@ -112,4 +112,25 @@ public class TeamsController : ControllerBase
         var result = await _teamService.GetMyTeamAsync(GetUserId());
         return Ok(result);
     }
+
+    [HttpDelete("leave")]
+    public async Task<ActionResult> LeaveTeam()
+    {
+        try
+        {
+            var result = await _teamService.LeaveTeamAsync(GetUserId());
+            return Ok(new { message = result.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpGet("taken-roles/{inviteCode}")]
+    public async Task<ActionResult> GetTakenRoles(string inviteCode)
+    {
+        var roles = await _teamService.GetTakenRolesAsync(inviteCode);
+        return Ok(roles);
+    }
 }

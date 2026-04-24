@@ -22,8 +22,12 @@ const VMPanel = ({ challenges, caseId, onRefresh }) => {
   const [kaliPort,     setKaliPort]     = useState(null);
   const [startingKali, setStartingKali] = useState(false);
   const [open,         setOpen]         = useState(false);
+  const [selVmIdx,     setSelVmIdx]     = useState(0);
 
-  const vmChallenge = challenges.find(c => c.hasVM) || null;
+  // VM olan tüm sorular
+  const vmChallenges = challenges.filter(c => c.hasVM);
+  const vmChallenge  = vmChallenges[selVmIdx] || vmChallenges[0] || null;
+
   if (!vmChallenge) return null;
 
   const startVM = async () => {
@@ -59,6 +63,21 @@ const VMPanel = ({ challenges, caseId, onRefresh }) => {
         <div className="db-vm-content">
           <div className="db-vm-title">{vmChallenge.title}</div>
 
+          {/* Birden fazla VM varsa seçim */}
+          {vmChallenges.length > 1 && (
+            <select
+              className="db-vm-select"
+              value={selVmIdx}
+              onChange={e => { setSelVmIdx(parseInt(e.target.value)); setVmData(null); setKaliPort(null); }}
+            >
+              {vmChallenges.map((ch, i) => (
+                <option key={ch.id} value={i} disabled={!ch.isUnlocked}>
+                  #{ch.order} {ch.title} {!ch.isUnlocked ? '🔒' : ''}
+                </option>
+              ))}
+            </select>
+          )}
+
           {!vmData ? (
             <button className="db-vm-start" onClick={startVM} disabled={starting}>
               {starting ? '⏳ Başlatılıyor...' : '🚀 Makineyi Başlat'}
@@ -88,30 +107,13 @@ const VMPanel = ({ challenges, caseId, onRefresh }) => {
               <div className="db-vm-btns">
                 {vmData.terminalPort && (
                   <a href={`http://localhost:${vmData.terminalPort}`} target="_blank" rel="noopener noreferrer" className="db-vm-btn-sec">
-                    Terminal
+                    🖥️ Terminal Aç
                   </a>
                 )}
-                <button className="db-vm-btn-sec" disabled={startingKali} onClick={async () => {
-                  setStartingKali(true);
-                  try {
-                    const res = await api.post(`/challenges/${vmChallenge.id}/start-kali`);
-                    setKaliPort(res.data.kaliPort);
-                    showToast('Kali başlatıldı!', 'success');
-                  } catch (err) { showToast(err.response?.data?.message || 'Kali başlatılamadı', 'error'); }
-                  finally { setStartingKali(false); }
-                }}>
-                  {startingKali ? '...' : '🐉 Kali'}
-                </button>
                 <button className="db-vm-btn-stop" onClick={stopVM} disabled={stopping}>
-                  {stopping ? '...' : '⏹'}
+                  {stopping ? '...' : '⏹ Durdur'}
                 </button>
               </div>
-
-              {kaliPort && (
-                <a href={`http://localhost:${kaliPort}/`} target="_blank" rel="noopener noreferrer" className="db-vm-kali-btn">
-                  🖥️ Kali Masaüstü
-                </a>
-              )}
 
               {vmData.expiresAt && (
                 <div className="db-vm-expires">
@@ -217,28 +219,23 @@ const AdminBoardCard = ({ card, onClick, onDragStart, wasDragged }) => {
   );
 };
 
-/* ── Kart pozisyonları (sabit layout) ── */
+/* ── Kart pozisyonları — sıralı zincir layout ── */
 const getCardLayout = (challenges) => {
-  const positions = [
-    { x: 900,  y: 150 },
-    { x: 1200, y: 300 },
-    { x: 1500, y: 150 },
-    { x: 1800, y: 300 },
-    { x: 2100, y: 150 },
-    { x: 2400, y: 300 },
-    { x: 2700, y: 150 },
-  ];
+  // Sorular soldan sağa zincir şeklinde dizilir
   return challenges.map((ch, i) => ({
     ...ch,
-    pos: positions[i % positions.length],
-    rot: (i % 2 === 0 ? -1 : 1) * (1 + (i % 3)),
+    pos: {
+      x: 800 + i * 320,
+      y: 200 + (i % 2 === 0 ? 0 : 160),
+    },
+    rot: (i % 2 === 0 ? -1.5 : 1.5),
   }));
 };
 
 /* ── İp çizimi için merkez noktası ── */
-const cardCenter = (pos, w = 200, h = 240) => ({
-  x: pos.x + w / 2,
-  y: pos.y + 15,
+const cardCenter = (pos) => ({
+  x: pos.x + 100,
+  y: pos.y + 120,
 });
 
 /* ══════════════════════════════════════════
@@ -261,6 +258,7 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
   const [userNotes,  setUserNotes]  = useState([]);
   const [suspects,   setSuspects]   = useState([]);
   const [boardCards, setBoardCards] = useState([]); // admin kartları
+  const [evidences,  setEvidences]  = useState([]); // delil kartları
 
   // UI state
   const [selectedCard,  setSelectedCard]  = useState(null); // sağ panel (flag girişi)
@@ -277,13 +275,17 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
     setChallenges(getCardLayout(initialChallenges));
   }, [initialChallenges]);
 
-  // Admin board kartlarını yükle
+  // Admin board kartlarını ve delilleri yükle
   useEffect(() => {
     if (!caseId) return;
     api.get(`/board-cards/case/${caseId}`)
       .then(res => setBoardCards(res.data))
       .catch(() => {});
-  }, [caseId, initialChallenges]); // challenges değişince (soru çözülünce) yenile
+    // Delilleri yükle — public endpoint
+    api.get(`/challenges/case/${caseId}/evidences`)
+      .then(res => setEvidences(res.data))
+      .catch(() => {});
+  }, [caseId, initialChallenges]);
 
   /* ── SignalR ── */
   useEffect(() => {
@@ -489,19 +491,67 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
       >
         {/* ── SVG İpler ── */}
         <svg className="db-svg">
-          {/* Senaryo → her soru */}
-          {challenges.map(ch => {
-            const from = scenarioCenter;
+          {/* Soru → Soru zinciri (sıralı bağlantı) */}
+          {challenges.map((ch, i) => {
+            if (i === 0) return null;
+            const prev = challenges[i - 1];
+            const from = cardCenter(prev.pos);
             const to   = cardCenter(ch.pos);
             const locked = !ch.isUnlocked;
             return (
               <path
-                key={`s_${ch.id}`}
+                key={`chain_${ch.id}`}
                 d={getStringPath(from, to)}
                 className={`db-string ${locked ? 'locked' : 'unlocked'}`}
               />
             );
           })}
+
+          {/* Senaryo kartı → ilk soru */}
+          {challenges.length > 0 && (
+            <path
+              key="scenario_first"
+              d={getStringPath(scenarioCenter, cardCenter(challenges[0].pos))}
+              className="db-string unlocked"
+            />
+          )}
+
+          {/* Admin delil kartları → ilgili soru kartına ip */}
+          {boardCards.map(bc => {
+            if (!bc.unlockedByChallenge) return null;
+            const relChallenge = challenges.find(c => c.id === bc.unlockedByChallenge);
+            if (!relChallenge) return null;
+            const from = { x: bc.posX + 80, y: bc.posY + 20 };
+            const to   = cardCenter(relChallenge.pos);
+            return (
+              <path
+                key={`ev_${bc.id}`}
+                d={getStringPath(from, to)}
+                className={`db-string ${bc.isUnlocked ? 'unlocked evidence-string' : 'locked'}`}
+                strokeDasharray={bc.isUnlocked ? 'none' : '6,4'}
+              />
+            );
+          })}
+
+          {/* Delil kartları → ilgili soru kartına ip */}
+          {evidences.map((ev) => {
+            const relChallenge = challenges.find(c => c.id === ev.challengeId);
+            if (!relChallenge) return null;
+            const sameChEvidences = evidences.filter(e => e.challengeId === ev.challengeId);
+            const evIdx = sameChEvidences.findIndex(e => e.id === ev.id);
+            const evX = relChallenge.pos.x - 80 + evIdx * 180;
+            const evY = relChallenge.pos.y + 300;
+            const from = { x: evX + 80, y: evY + 10 };
+            const to   = cardCenter(relChallenge.pos);
+            return (
+              <path
+                key={`evip_${ev.id}`}
+                d={getStringPath(from, to)}
+                className="db-string unlocked evidence-string"
+              />
+            );
+          })}
+
           {/* Kullanıcı ipleri */}
           {strings.map(s => {
             const fromNote = userNotes.find(n => n.id === s.fromId);
@@ -610,6 +660,38 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
             onClick={() => setViewCard({ ...bc, isAdminCard: true })}
           />
         ))}
+
+        {/* ── Delil Kartları (admin panelden eklenen) ── */}
+        {evidences.map((ev) => {
+          const BASE = (process.env.REACT_APP_API_URL || 'http://localhost:5001/api').replace('/api', '');
+          const relChallenge = challenges.find(c => c.id === ev.challengeId);
+          if (!relChallenge) return null;
+          // Aynı soruya ait delillerin index'ini bul
+          const sameChEvidences = evidences.filter(e => e.challengeId === ev.challengeId);
+          const evIdx = sameChEvidences.findIndex(e => e.id === ev.id);
+          const evX = relChallenge.pos.x - 80 + evIdx * 180;
+          const evY = relChallenge.pos.y + 300;
+          const TYPE_ICONS = { video:'🎥', audio:'🎵', image:'🖼️', document:'📄', log:'📋', file:'📁' };
+          const icon = TYPE_ICONS[ev.type] || '📁';
+          const url = ev.fileUrl?.startsWith('http') ? ev.fileUrl : BASE + ev.fileUrl;
+
+          return (
+            <div
+              key={`ev_${ev.id}`}
+              className="db-card db-evidence-card"
+              style={{ left: evX, top: evY, transform: `rotate(${evIdx % 2 === 0 ? -1.5 : 1.5}deg)` }}
+              onClick={() => setViewCard({ ...ev, isEvidenceCard: true, evUrl: url })}
+            >
+              <div className="db-pin db-pin-blue" />
+              <div className="db-evidence-card-icon">{icon}</div>
+              {ev.type === 'image' && (
+                <img src={url} alt={ev.title} className="db-evidence-card-thumb" />
+              )}
+              <div className="db-evidence-card-title">{ev.title}</div>
+              <div className="db-evidence-card-type">{ev.type?.toUpperCase()}</div>
+            </div>
+          );
+        })}
       </div>
 
       {/* ── Açık Soru Paneli (sağ kenar) ── */}
@@ -681,6 +763,18 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
               {/* Admin kartı içeriği */}
               {viewCard.isAdminCard ? (
                 <AdminCardContent card={viewCard} />
+              ) : viewCard.isEvidenceCard ? (
+                <div className="db-card-popup-section">
+                  {viewCard.type === 'video' && <video src={viewCard.evUrl} controls autoPlay style={{width:'100%',borderRadius:4}}/>}
+                  {viewCard.type === 'audio' && <audio src={viewCard.evUrl} controls style={{width:'100%'}}/>}
+                  {viewCard.type === 'image' && <img src={viewCard.evUrl} alt={viewCard.title} style={{width:'100%',borderRadius:4}}/>}
+                  {!['video','audio','image'].includes(viewCard.type) && (
+                    <a href={viewCard.evUrl} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
+                      📥 İndir / Aç
+                    </a>
+                  )}
+                  {viewCard.description && <p className="db-card-popup-desc" style={{marginTop:12}}>{viewCard.description}</p>}
+                </div>
               ) : (
                 <p className="db-card-popup-desc">
                   {cardDetails[viewCard.id]?.description || viewCard.description}
@@ -743,14 +837,14 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
                 );
               })()}
 
-              {/* Flag girişi — sadece soru kartlarında */}
+              {/* Flag girişi — soru kartı popup'undan */}
               {!viewCard.isAdminCard && !viewCard.isSolved && (
                 <div className="db-card-popup-flag">
                   <div className="db-card-popup-section-title">🚩 Flag Gir</div>
                   <div className="db-flag-row">
                     <input
                       className="db-flag-input"
-                      placeholder="CTF{...}"
+                      placeholder="flag{...}"
                       value={flagInput}
                       onChange={e => setFlagInput(e.target.value)}
                       onKeyDown={e => e.key === 'Enter' && submitFlag(viewCard.id)}

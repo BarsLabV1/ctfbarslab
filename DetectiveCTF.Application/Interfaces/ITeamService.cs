@@ -10,4 +10,6 @@ public interface ITeamService
     Task<List<TeamListDto>> GetTeamsAsync();
     Task<TeamActionResponse> KickMemberAsync(int requesterId, int teamId, int userId);
     Task<MyTeamDto> GetMyTeamAsync(int userId);
+    Task<TeamActionResponse> LeaveTeamAsync(int userId);
+    Task<List<string>> GetTakenRolesAsync(string inviteCode);
 }

@@ -1,0 +1,55 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" style="background:#f5f0e8;font-family:Courier New,monospace">
+  <!-- Kart cercevesi -->
+  <rect x="10" y="10" width="380" height="260" rx="8" fill="#f5f0e8" stroke="#2c2c2c" stroke-width="2"/>
+  
+  <!-- Baslik -->
+  <text x="200" y="40" text-anchor="middle" font-size="11" font-weight="bold" fill="#333" letter-spacing="2">NOVACORE FINANS — PERSONEL KARTI</text>
+  <line x1="20" y1="48" x2="380" y2="48" stroke="#ccc" stroke-width="1"/>
+  
+  <!-- Barkod alani -->
+  <rect x="30" y="60" width="200" height="50" fill="#fff" stroke="#999" stroke-width="1"/>
+  <text x="130" y="90" text-anchor="middle" font-size="8" fill="#666">||||| |||| ||||| |||| |||||</text>
+  <text x="130" y="103" text-anchor="middle" font-size="7" fill="#999">DZ-8821-ERKAN-D</text>
+  
+  <!-- Bilgiler -->
+  <text x="30" y="135" font-size="10" fill="#555">Ad Soyad:</text>
+  <text x="110" y="135" font-size="10" font-weight="bold" fill="#222">Deniz Erkan</text>
+  <text x="30" y="152" font-size="10" fill="#555">Unvan:</text>
+  <text x="110" y="152" font-size="10" fill="#222">Ic Denetim Uzmani</text>
+  <text x="30" y="169" font-size="10" fill="#555">Departman:</text>
+  <text x="110" y="169" font-size="10" fill="#222">Mali Denetim / 5. Kat</text>
+  <text x="30" y="186" font-size="10" fill="#555">Rozet No:</text>
+  <text x="110" y="186" font-size="10" fill="#222">DZ-8821</text>
+  
+  <!-- QR kod alani - alt kose -->
+  <rect x="295" y="170" width="80" height="80" fill="#fff" stroke="#333" stroke-width="1.5"/>
+  <!-- QR piksel simulasyonu -->
+  <rect x="300" y="175" width="8" height="8" fill="#000"/>
+  <rect x="310" y="175" width="8" height="8" fill="#000"/>
+  <rect x="330" y="175" width="8" height="8" fill="#000"/>
+  <rect x="340" y="175" width="8" height="8" fill="#000"/>
+  <rect x="360" y="175" width="8" height="8" fill="#000"/>
+  <rect x="300" y="185" width="8" height="8" fill="#000"/>
+  <rect x="320" y="185" width="8" height="8" fill="#000"/>
+  <rect x="350" y="185" width="8" height="8" fill="#000"/>
+  <rect x="360" y="185" width="8" height="8" fill="#000"/>
+  <rect x="300" y="195" width="8" height="8" fill="#000"/>
+  <rect x="310" y="195" width="8" height="8" fill="#000"/>
+  <rect x="330" y="195" width="8" height="8" fill="#000"/>
+  <rect x="340" y="195" width="8" height="8" fill="#000"/>
+  <rect x="300" y="205" width="8" height="8" fill="#000"/>
+  <rect x="320" y="205" width="8" height="8" fill="#000"/>
+  <rect x="350" y="205" width="8" height="8" fill="#000"/>
+  <rect x="310" y="215" width="8" height="8" fill="#000"/>
+  <rect x="330" y="215" width="8" height="8" fill="#000"/>
+  <rect x="360" y="215" width="8" height="8" fill="#000"/>
+  <rect x="300" y="225" width="8" height="8" fill="#000"/>
+  <rect x="320" y="225" width="8" height="8" fill="#000"/>
+  <rect x="340" y="225" width="8" height="8" fill="#000"/>
+  <rect x="355" y="225" width="8" height="8" fill="#000"/>
+  <!-- QR alti yazi -->
+  <text x="335" y="260" text-anchor="middle" font-size="7" fill="#c00" font-weight="bold">LOCKER-B:8742</text>
+  
+  <!-- Alt not -->
+  <text x="200" y="268" text-anchor="middle" font-size="8" fill="#999">Bu kart devredilemez. Kayip durumunda guvenlige bildirin.</text>
+</svg>

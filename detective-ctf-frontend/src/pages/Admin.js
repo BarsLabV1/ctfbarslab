@@ -54,8 +54,15 @@ const Admin = () => {
   const [selCaseEv,  setSelCaseEv]  = useState(null);
   const [selCaseBoard, setSelCaseBoard] = useState(null);
   const [boardCards, setBoardCards] = useState([]);
-  const [bcModal, setBcModal] = useState(null); // null | 'new' | cardObj
-  const blankBC = { caseId:'', type:'note', title:'', content:'', fileUrl:'', externalUrl:'', dockerImage:'', posX:400, posY:400, rotation:0, color:'#bacb9a', unlockedByChallenge:'' }; // evidence filter
+  const [bcModal, setBcModal] = useState(null);
+  const blankBC = { caseId:'', type:'note', title:'', content:'', fileUrl:'', externalUrl:'', dockerImage:'', posX:400, posY:400, rotation:0, color:'#bacb9a', unlockedByChallenge:'' };
+
+  // Docker image builder
+  const [dockerImages, setDockerImages] = useState([]);
+  const [dfModal, setDfModal] = useState(false);
+  const [dfForm, setDfForm] = useState({ name:'', tag:'latest', dockerfile:'FROM ubuntu:22.04\n\nRUN apt-get update && apt-get install -y openssh-server\nRUN mkdir /var/run/sshd\nRUN echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config\n\n# Kullanıcı oluştur\nRUN useradd -m -s /bin/bash ctfuser && echo "ctfuser:password123" | chpasswd\n\n# Dosyaları kopyala\nCOPY files/ /home/ctfuser/\n\nEXPOSE 22\nCMD ["/usr/sbin/sshd", "-D"]', files:[] });
+  const [building, setBuilding] = useState(false);
+  const [buildLog, setBuildLog] = useState('');
 
   // upload state
   const [uploading,    setUploading]    = useState(false);
@@ -85,19 +92,27 @@ const Admin = () => {
   /* ── fetch ── */
   const fetchAll = useCallback(async () => {
     try {
-      const [s, c, u] = await Promise.all([
-        api.get('/admin/stats'),
-        api.get('/cases'),
-        api.get('/admin/users'),
-      ]);
-      setStats(s.data);
-      const caseList = c.data;
+      const cRes = await api.get('/cases');
+      const caseList = cRes.data;
       setCases(caseList);
-      setUsers(u.data);
-      // tüm soruları çek (delil formunda seçim için)
-      const allQ = await Promise.all(caseList.map(ca => api.get(`/challenges/case/${ca.id}`)));
+
+      // Soruları çek
+      const allQ = await Promise.all(caseList.map(ca => api.get(`/challenges/case/${ca.id}`).catch(() => ({ data: [] }))));
       setQuestions(allQ.flatMap((r, i) => r.data.map(q => ({ ...q, caseId: caseList[i].id }))));
-    } catch { showToast('Veriler yüklenemedi', 'error'); }
+    } catch (err) {
+      console.error('Cases yüklenemedi:', err);
+      showToast('Vakalar yüklenemedi', 'error');
+    }
+
+    try {
+      const sRes = await api.get('/admin/stats');
+      setStats(sRes.data);
+    } catch {}
+
+    try {
+      const uRes = await api.get('/admin/users');
+      setUsers(uRes.data);
+    } catch {}
   }, []); // eslint-disable-line
 
   const fetchQuestions = useCallback(async (caseId) => {
@@ -120,6 +135,34 @@ const Admin = () => {
   }, []); // eslint-disable-line
 
   useEffect(() => { if (tab === 'evidences') fetchEvidences(); }, [tab]); // eslint-disable-line
+  useEffect(() => { if (tab === 'dockerfiles') fetchDockerImages(); }, [tab]); // eslint-disable-line
+
+  const fetchDockerImages = async () => {
+    try {
+      const res = await api.get('/admin/docker/images');
+      setDockerImages(res.data);
+    } catch { setDockerImages([]); }
+  };
+
+  const buildDockerImage = async () => {
+    if (!dfForm.name || !dfForm.dockerfile) { showToast('Image adı ve Dockerfile gerekli', 'warning'); return; }
+    setBuilding(true);
+    setBuildLog('Build başlatılıyor...\n');
+    try {
+      const res = await api.post('/admin/docker/build', {
+        name: dfForm.name,
+        tag: dfForm.tag || 'latest',
+        dockerfile: dfForm.dockerfile,
+        files: dfForm.files,
+      });
+      setBuildLog(res.data.log || 'Build tamamlandı!');
+      showToast(`${dfForm.name}:${dfForm.tag} build edildi!`, 'success');
+      fetchDockerImages();
+    } catch (err) {
+      setBuildLog(err.response?.data?.error || 'Build başarısız');
+      showToast('Build başarısız', 'error');
+    } finally { setBuilding(false); }
+  };
 
   const fetchBoardCards = useCallback(async (caseId) => {
     if (!caseId) return;
@@ -350,9 +393,9 @@ const Admin = () => {
       </div>
 
       <div className="adm-tabs">
-        {['cases','questions','evidences','boardcards','users'].map(t => (
+        {['cases','questions','evidences','boardcards','dockerfiles','users'].map(t => (
           <button key={t} className={`adm-tab ${tab===t?'active':''}`} onClick={() => setTab(t)}>
-            {{ cases:'Senaryolar', questions:'Sorular', evidences:'Deliller', boardcards:'Pano Kartları', users:'Kullanıcılar' }[t]}
+            {{ cases:'Senaryolar', questions:'Sorular', evidences:'Deliller', boardcards:'Pano Kartları', dockerfiles:'Docker Images', users:'Kullanıcılar' }[t]}
           </button>
         ))}
       </div>
@@ -584,6 +627,37 @@ const Admin = () => {
           </>
         )}
 
+        {/* ── DOCKER IMAGES ── */}
+        {tab === 'dockerfiles' && (
+          <>
+            <div className="adm-section-header">
+              <h2>Docker Images</h2>
+              <button className="btn btn-primary btn-small" onClick={() => { setDfModal(true); setBuildLog(''); }}>
+                + Yeni Image Build Et
+              </button>
+            </div>
+
+            <table className="adm-table">
+              <thead><tr><th>Image</th><th>Tag</th><th>Boyut</th><th>Oluşturulma</th></tr></thead>
+              <tbody>
+                {dockerImages.length === 0 && (
+                  <tr><td colSpan={4} style={{textAlign:'center',color:'#475569',padding:32}}>
+                    Docker image listesi yüklenemedi veya boş
+                  </td></tr>
+                )}
+                {dockerImages.map((img, i) => (
+                  <tr key={i}>
+                    <td className="adm-title">{img.name}</td>
+                    <td><span className="adm-cat">{img.tag}</span></td>
+                    <td className="adm-email">{img.size}</td>
+                    <td className="adm-email">{img.created}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        )}
+
         {/* ── USERS ── */}
         {tab === 'users' && (
           <>
@@ -608,6 +682,71 @@ const Admin = () => {
           </>
         )}
       </div>
+
+      {/* ── Docker Build Modal ── */}
+      {dfModal && (
+        <div className="adm-overlay" onClick={() => !building && setDfModal(false)}>
+          <div className="adm-modal" style={{width:700,maxHeight:'90vh',overflowY:'auto'}} onClick={e=>e.stopPropagation()}>
+            <div className="adm-modal-header">
+              <h3>Docker Image Build Et</h3>
+              <button className="adm-modal-close" onClick={() => !building && setDfModal(false)}>✕</button>
+            </div>
+            <div className="adm-modal-body">
+              <div className="adm-form">
+                <div className="adm-form-row">
+                  <div>
+                    <label>Image Adı *</label>
+                    <input placeholder="ctf/benim-makine" value={dfForm.name} onChange={e=>setDfForm(f=>({...f,name:e.target.value}))}/>
+                  </div>
+                  <div>
+                    <label>Tag</label>
+                    <input placeholder="latest" value={dfForm.tag} onChange={e=>setDfForm(f=>({...f,tag:e.target.value}))}/>
+                  </div>
+                </div>
+
+                <label>Dockerfile *</label>
+                <textarea
+                  rows={14}
+                  style={{fontFamily:'monospace',fontSize:12}}
+                  value={dfForm.dockerfile}
+                  onChange={e=>setDfForm(f=>({...f,dockerfile:e.target.value}))}
+                />
+
+                <div className="adm-section-divider">📁 Dosyalar (COPY ile eklenecek)</div>
+                <p style={{fontSize:11,color:'#475569',marginBottom:8}}>
+                  Dockerfile'da <code>COPY files/ /hedef/</code> kullanarak bu dosyalara erişebilirsin.
+                </p>
+                {dfForm.files.map((f, i) => (
+                  <div key={i} className="adm-hint-row">
+                    <input placeholder="dosya adı (örn: note.txt)" value={f.name}
+                      onChange={e=>setDfForm(df=>({...df,files:df.files.map((x,j)=>j===i?{...x,name:e.target.value}:x)}))}/>
+                    <textarea rows={2} placeholder="dosya içeriği" value={f.content}
+                      onChange={e=>setDfForm(df=>({...df,files:df.files.map((x,j)=>j===i?{...x,content:e.target.value}:x)}))}
+                      style={{flex:3,fontFamily:'monospace',fontSize:11}}/>
+                    <button className="adm-hint-remove" onClick={()=>setDfForm(df=>({...df,files:df.files.filter((_,j)=>j!==i)}))}>✕</button>
+                  </div>
+                ))}
+                <button className="adm-hint-add" onClick={()=>setDfForm(f=>({...f,files:[...f.files,{name:'',content:''}]}))}>
+                  + Dosya Ekle
+                </button>
+
+                {buildLog && (
+                  <div style={{background:'#000',border:'1px solid #1e293b',borderRadius:6,padding:12,marginTop:12,fontFamily:'monospace',fontSize:11,color:'#00ff88',whiteSpace:'pre-wrap',maxHeight:200,overflowY:'auto'}}>
+                    {buildLog}
+                  </div>
+                )}
+
+                <div className="adm-form-actions">
+                  <button className="btn btn-primary" onClick={buildDockerImage} disabled={building}>
+                    {building ? '⏳ Build ediliyor...' : '🐳 Build Et'}
+                  </button>
+                  <button className="btn btn-secondary" onClick={() => !building && setDfModal(false)}>İptal</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Board Card Modal ── */}
       {bcModal && (
@@ -762,6 +901,52 @@ const Admin = () => {
                 <input type="number" value={caseForm.totalPoints} onChange={e => setCaseForm(f=>({...f,totalPoints:+e.target.value}))} />
               </div>
             </div>
+
+            {/* Vaka kapak fotoğrafı */}
+            <label>Kapak Fotoğrafı</label>
+            <div className="adm-ev-dropzone" style={{marginBottom:12}}
+              onDragOver={e=>e.preventDefault()}
+              onDrop={async e=>{
+                e.preventDefault();
+                const file = e.dataTransfer.files[0];
+                if (!file) return;
+                const fd = new FormData(); fd.append('file', file);
+                try {
+                  const res = await api.post('/admin/upload', fd, {headers:{'Content-Type':'multipart/form-data'}});
+                  setCaseForm(f=>({...f, imageUrl: res.data.fileUrl}));
+                  showToast('Fotoğraf yüklendi!', 'success');
+                } catch { showToast('Yükleme başarısız', 'error'); }
+              }}>
+              {caseForm.imageUrl ? (
+                <div className="adm-ev-preview">
+                  <img
+                    src={(process.env.REACT_APP_API_URL||'http://localhost:5001/api').replace('/api','') + caseForm.imageUrl}
+                    alt="kapak"
+                    style={{width:'100%', maxHeight:160, objectFit:'cover', borderRadius:4}}
+                  />
+                  <button className="adm-ev-clear" onClick={()=>setCaseForm(f=>({...f,imageUrl:''}))}>✕ Kaldır</button>
+                </div>
+              ) : (
+                <label className="adm-ev-drop-label">
+                  <input type="file" accept="image/*" style={{display:'none'}}
+                    onChange={async e=>{
+                      const file = e.target.files[0];
+                      if (!file) return;
+                      const fd = new FormData(); fd.append('file', file);
+                      try {
+                        const res = await api.post('/admin/upload', fd, {headers:{'Content-Type':'multipart/form-data'}});
+                        setCaseForm(f=>({...f, imageUrl: res.data.fileUrl}));
+                        showToast('Fotoğraf yüklendi!', 'success');
+                      } catch { showToast('Yükleme başarısız', 'error'); }
+                    }}
+                  />
+                  <div className="adm-ev-drop-icon">🖼️</div>
+                  <div>Fotoğraf sürükle veya <span>seç</span></div>
+                  <div className="adm-ev-drop-hint">JPG, PNG, WEBP — max 200MB</div>
+                </label>
+              )}
+            </div>
+
             <div className="adm-form-actions">
               <button className="btn btn-primary" onClick={saveCase}>Kaydet</button>
               <button className="btn btn-secondary" onClick={() => setCaseModal(null)}>İptal</button>

@@ -34,8 +34,9 @@ public class DockerService
         var error  = await process.StandardError.ReadToEndAsync();
 
         if (!string.IsNullOrEmpty(error))
-            _logger.LogWarning("Docker stderr: {Error}", error);
+            _logger.LogWarning("Docker stderr: {Error}", error.Trim());
 
+        // Sadece stdout döndür (container ID, port bilgisi vb.)
         return output.Trim();
     }
 
@@ -63,7 +64,7 @@ public class DockerService
 
             if (string.IsNullOrEmpty(containerId) || containerId.Length < 12)
             {
-                _logger.LogError("Container başlatılamadı: {Output}", containerId);
+                _logger.LogError("Container başlatılamadı. Docker çıktısı: '{Output}'", containerId);
                 return null;
             }
 
@@ -103,7 +104,8 @@ public class DockerService
             }
 
             var finalPort = webPort ?? sshPort ?? hostPort;
-            _logger.LogInformation("Container: {Name} web:{WebPort} ssh:{SshPort}", containerName, webPort, sshPort);
+            _logger.LogInformation("Container: {Name} hostPort:{HostPort} web:{WebPort} ssh:{SshPort} final:{Final} allPorts:'{AllPorts}'",
+                containerName, hostPort, webPort, sshPort, finalPort, allPorts);
 
             return new VMInstance
             {
