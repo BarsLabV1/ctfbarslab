@@ -1128,3 +1128,167 @@
   .play-body { flex-direction: column; }
   .play-questions { width: 100%; min-width: unset; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.07); max-height: 40vh; }
 }
+
+/* ── Kali Paneli ── */
+.kali-panel {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.kali-toggle-btn {
+  background: rgba(255,59,59,0.1);
+  border: 1px solid rgba(255,59,59,0.3);
+  color: #ff3b3b;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.kali-toggle-btn:hover {
+  background: rgba(255,59,59,0.2);
+  border-color: rgba(255,59,59,0.5);
+}
+
+.kali-panel-body {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 280px;
+  background: #0d0f14;
+  border: 1px solid rgba(255,59,59,0.25);
+  padding: 16px;
+  z-index: 200;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+}
+
+.kali-desc {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.kali-start-btn {
+  width: 100%;
+  padding: 10px;
+  background: rgba(255,59,59,0.15);
+  border: 1px solid rgba(255,59,59,0.3);
+  color: #ff3b3b;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.kali-start-btn:hover:not(:disabled) {
+  background: rgba(255,59,59,0.25);
+}
+
+.kali-start-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.kali-active { display: flex; flex-direction: column; gap: 10px; }
+
+.kali-active-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kali-dot {
+  width: 8px; height: 8px;
+  background: #ff3b3b;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #ff3b3b;
+  animation: pulse 2s infinite;
+}
+
+.kali-active-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #ff3b3b;
+  letter-spacing: 1px;
+}
+
+.kali-open-btn {
+  display: block;
+  padding: 10px;
+  background: #ff3b3b;
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-align: center;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.kali-open-btn:hover { opacity: 0.85; }
+
+.kali-info {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.kali-info code {
+  color: #ff3b3b;
+  background: rgba(255,59,59,0.1);
+  padding: 1px 6px;
+}
+
+.kali-stop-btn {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.kali-stop-btn:hover { border-color: rgba(255,59,59,0.3); color: #ff3b3b; }
+
+/* IP kopyala */
+.vm-ip-copy {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(0,212,255,0.06);
+  border: 1px solid rgba(0,212,255,0.2);
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 8px;
+}
+
+.vm-ip-copy:hover {
+  background: rgba(0,212,255,0.12);
+  border-color: rgba(0,212,255,0.4);
+}
+
+.vm-ip-copy code {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 700;
+  color: #00d4ff;
+  letter-spacing: 2px;
+  flex: 1;
+}
+
+.vm-ip-copy-hint {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  white-space: nowrap;
+}

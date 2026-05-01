@@ -14,7 +14,9 @@ public record AdminChallengeRequest(
     string? VMConnectionInfo,
     string? Files,
     string? Hints,
-    string? UnlockContent
+    string? UnlockContent,
+    int? PosX = null,
+    int? PosY = null
 );
 
 public record AdminChallengeListDto(
@@ -33,5 +35,7 @@ public record AdminChallengeListDto(
     string? Files,
     string? Hints,
     string? UnlockContent,
-    int? RequiredChallengeId
+    int? RequiredChallengeId,
+    int PosX = 0,
+    int PosY = 0
 );

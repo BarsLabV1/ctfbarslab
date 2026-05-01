@@ -45,7 +45,9 @@ public class AdminChallengeService : IAdminChallengeService
          c.Files,
          c.Hints,
          c.UnlockContent,
-         c.RequiredChallengeId
+         c.RequiredChallengeId,
+         c.PosX,
+         c.PosY
      ))
      .ToListAsync();
     }
@@ -69,7 +71,9 @@ public class AdminChallengeService : IAdminChallengeService
             VMConnectionInfo = request.VMConnectionInfo,
             Files = request.Files,
             Hints = request.Hints,
-            UnlockContent = request.UnlockContent
+            UnlockContent = request.UnlockContent,
+            PosX = request.PosX ?? 0,
+            PosY = request.PosY ?? 0,
         };
 
         _context.Challenges.Add(challenge);
@@ -100,6 +104,8 @@ public class AdminChallengeService : IAdminChallengeService
         challenge.Files = request.Files;
         challenge.Hints = request.Hints;
         challenge.UnlockContent = request.UnlockContent;
+        challenge.PosX = request.PosX ?? challenge.PosX;
+        challenge.PosY = request.PosY ?? challenge.PosY;
 
         await _context.SaveChangesAsync();
     }

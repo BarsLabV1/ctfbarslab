@@ -7,6 +7,77 @@ import DetectiveBoard from '../components/DetectiveBoard';
 import EvidenceBoard from '../components/EvidenceBoard';
 import './Play.css';
 
+/* ── Bağımsız Kali Paneli ── */
+const KaliPanel = () => {
+  const { showToast } = useToast();
+  const [kaliData,      setKaliData]      = useState(null);
+  const [starting,      setStarting]      = useState(false);
+  const [stopping,      setStopping]      = useState(false);
+  const [open,          setOpen]          = useState(false);
+
+  const startKali = async () => {
+    setStarting(true);
+    try {
+      const res = await api.post('/challenges/start-kali-standalone');
+      setKaliData(res.data);
+      showToast('Kali masaüstü başlatıldı!', 'success');
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Kali başlatılamadı', 'error');
+    } finally { setStarting(false); }
+  };
+
+  const stopKali = async () => {
+    setStopping(true);
+    try {
+      await api.post('/challenges/stop-kali-standalone');
+      setKaliData(null);
+      showToast('Kali durduruldu', 'info');
+    } catch { showToast('Durdurulamadı', 'error'); }
+    finally { setStopping(false); }
+  };
+
+  return (
+    <div className="kali-panel">
+      <button className="kali-toggle-btn" onClick={() => setOpen(o => !o)}>
+        🐉 KALİ MASAÜSTÜ {open ? '▲' : '▼'}
+      </button>
+      {open && (
+        <div className="kali-panel-body">
+          {!kaliData ? (
+            <>
+              <p className="kali-desc">Tarayıcı üzerinden tam Kali Linux masaüstüne eriş.</p>
+              <button className="kali-start-btn" onClick={startKali} disabled={starting}>
+                {starting ? '⏳ Başlatılıyor... (~30sn)' : '🚀 Kali Başlat'}
+              </button>
+            </>
+          ) : (
+            <div className="kali-active">
+              <div className="kali-active-row">
+                <span className="kali-dot" />
+                <span className="kali-active-label">KALİ ÇALIŞIYOR</span>
+              </div>
+              <a
+                href={`https://${kaliData.ipAddress}:${kaliData.kaliPort}/`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="kali-open-btn"
+              >
+                🖥️ Kali Masaüstünü Aç
+              </a>
+              <div className="kali-info">
+                Port: <code>{kaliData.kaliPort}</code>
+              </div>
+              <button className="kali-stop-btn" onClick={stopKali} disabled={stopping}>
+                {stopping ? '...' : '⏹ Durdur'}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const HUB_URL = (process.env.REACT_APP_API_URL || 'http://localhost:5001/api')
   .replace('/api', '/hubs/board');
 
@@ -117,8 +188,13 @@ const VMButton = ({ challenge, onStarted }) => {
   const [vmData, setVmData] = useState(null);
   const [starting, setStarting] = useState(false);
   const [stopping, setStopping] = useState(false);
-  const [kaliPort, setKaliPort] = useState(null);
-  const [startingKali, setStartingKali] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const copyIP = () => {
+    navigator.clipboard?.writeText(vmData.ipAddress).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const startVM = async () => {
     setStarting(true);
@@ -136,7 +212,7 @@ const VMButton = ({ challenge, onStarted }) => {
     setStopping(true);
     try {
       await api.post(`/challenges/${challenge.id}/stop-vm`);
-      setVmData(null); setKaliPort(null);
+      setVmData(null);
       showToast('VM durduruldu', 'info');
     } catch { showToast('Durdurulamadı', 'error'); }
     finally { setStopping(false); }
@@ -145,7 +221,7 @@ const VMButton = ({ challenge, onStarted }) => {
   if (!vmData) {
     return (
       <button className="vm-start-btn" onClick={startVM} disabled={starting}>
-        {starting ? '⏳ Başlatılıyor...' : '🚀 Makineyi Başlat'}
+        {starting ? '⏳ Başlatılıyor...' : '🚀 Senaryoyu Başlat'}
       </button>
     );
   }
@@ -154,43 +230,29 @@ const VMButton = ({ challenge, onStarted }) => {
     <div className="vm-active">
       <div className="vm-active-header">
         <div className="vm-active-dot" />
-        <span className="vm-active-label">VM Çalışıyor</span>
+        <span className="vm-active-label">SENARYO AKTİF</span>
         <button className="vm-stop-btn" onClick={stopVM} disabled={stopping}>
           {stopping ? '...' : '⏹ Durdur'}
         </button>
       </div>
       <div className="vm-conn-info">
-        {vmData.webUrl ? (
-          <a href={vmData.webUrl} target="_blank" rel="noopener noreferrer" className="vm-web-btn">
-            🌐 Web Sitesini Aç
-          </a>
-        ) : (
-          <div className="vm-conn-row">
-            <span>SSH:</span>
-            <code>{vmData.ipAddress}:{vmData.port}</code>
-          </div>
-        )}
+              {/* Sadece IP — tıklayınca kopyala */}
+              <div
+                className="vm-ip-copy"
+                onClick={copyIP}
+                title="Kopyalamak için tıkla"
+              >
+                <code>{vmData.ipAddress}</code>
+                <span className="vm-ip-copy-hint">{copied ? '✓ Kopyalandı' : '📋 Kopyala'}</span>
+              </div>
+              {vmData.port && (
+                <div style={{fontFamily:'var(--font-mono)',fontSize:11,color:'var(--text-muted)',padding:'4px 0',letterSpacing:1}}>
+                  Port: <code style={{color:'#00d4ff'}}>{vmData.port}</code>
+                </div>
+              )}
         {vmData.terminalPort && (
           <a href={`http://${vmData.ipAddress}:${vmData.terminalPort}`} target="_blank" rel="noopener noreferrer" className="vm-terminal-btn">
             🖥️ Web Terminal
-          </a>
-        )}
-      </div>
-      <div className="vm-kali-row">
-        <button className="vm-kali-btn" disabled={startingKali} onClick={async () => {
-          setStartingKali(true);
-          try {
-            const res = await api.post(`/challenges/${challenge.id}/start-kali`);
-            setKaliPort(res.data.kaliPort);
-            showToast('Kali başlatıldı!', 'success');
-          } catch (err) { showToast(err.response?.data?.message || 'Kali başlatılamadı', 'error'); }
-          finally { setStartingKali(false); }
-        }}>
-          {startingKali ? '⏳...' : '🐉 Kali Masaüstü'}
-        </button>
-        {kaliPort && (
-          <a href={`http://localhost:${kaliPort}/`} target="_blank" rel="noopener noreferrer" className="vm-kali-open-btn">
-            🖥️ Kali'yi Aç
           </a>
         )}
       </div>

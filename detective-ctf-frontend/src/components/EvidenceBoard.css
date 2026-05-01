@@ -1,12 +1,13 @@
-/* ── Wrapper ── */
+/* ══════════════════════════════════════════
+   MANTAR PANO — Gerçekçi Dedektif Panosu
+══════════════════════════════════════════ */
+
 .eb-wrap {
   display: flex;
   flex-direction: column;
-  gap: 0;
-  border-radius: 12px;
+  flex: 1;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-  margin: 20px 0;
+  background: #1a1208;
 }
 
 /* ── Toolbar ── */
@@ -14,19 +15,41 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #1e1b14;
-  padding: 10px 18px;
-  border-bottom: 2px solid #3d2b1f;
+  background: #0f0c06;
+  padding: 8px 16px;
+  border-bottom: 2px solid #3d2b0f;
   flex-wrap: wrap;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.eb-toolbar-left {
+  display: flex;
+  align-items: center;
   gap: 10px;
 }
 
 .eb-toolbar-title {
-  font-size: 14px;
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
   font-weight: 700;
-  color: #d4a574;
-  letter-spacing: 1px;
+  color: #c9975a;
+  letter-spacing: 2px;
   text-transform: uppercase;
+}
+
+.eb-conn-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.eb-conn-dot.online  { background: #34d399; box-shadow: 0 0 6px #34d399; animation: pulse 2s infinite; }
+.eb-conn-dot.offline { background: #f87171; }
+
+.eb-conn-label {
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  color: #6b5a3e;
 }
 
 .eb-toolbar-actions {
@@ -36,58 +59,91 @@
 }
 
 .eb-btn {
-  background: rgba(212,165,116,0.15);
-  border: 1px solid rgba(212,165,116,0.35);
-  color: #d4a574;
-  padding: 6px 14px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 600;
+  background: rgba(201,151,90,0.12);
+  border: 1px solid rgba(201,151,90,0.3);
+  color: #c9975a;
+  padding: 5px 12px;
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
   cursor: pointer;
   transition: background 0.15s;
 }
-.eb-btn:hover { background: rgba(212,165,116,0.25); }
+.eb-btn:hover { background: rgba(201,151,90,0.22); }
 
 .eb-connecting-hint {
-  font-size: 12px;
-  color: #f87171;
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  color: #e74c3c;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 .eb-connecting-hint button {
-  background: rgba(248,113,113,0.15);
-  border: 1px solid rgba(248,113,113,0.3);
-  color: #f87171;
-  padding: 3px 10px;
-  border-radius: 5px;
-  font-size: 12px;
+  background: rgba(231,76,60,0.15);
+  border: 1px solid rgba(231,76,60,0.3);
+  color: #e74c3c;
+  padding: 3px 8px;
+  font-size: 10px;
   cursor: pointer;
 }
 
-/* ── Board ── */
+/* ── Mantar Pano ── */
 .eb-board {
   position: relative;
-  min-height: 580px;
-  background: linear-gradient(135deg, #b8864e 0%, #c9975a 40%, #b8864e 100%);
+  flex: 1;
+  min-height: 600px;
   overflow: hidden;
   cursor: default;
   user-select: none;
+
+  /* Mantar dokusu */
+  background-color: #b5763a;
+  background-image:
+    /* Mantar lif dokusu */
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 3px,
+      rgba(0,0,0,0.03) 3px,
+      rgba(0,0,0,0.03) 4px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 5px,
+      rgba(0,0,0,0.02) 5px,
+      rgba(0,0,0,0.02) 6px
+    ),
+    /* Derinlik gölgesi */
+    radial-gradient(ellipse at 20% 30%, rgba(255,200,100,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 70%, rgba(0,0,0,0.15) 0%, transparent 50%);
+
+  /* Çerçeve */
+  box-shadow:
+    inset 0 0 0 12px #5c3a1e,
+    inset 0 0 0 14px #3d2510,
+    inset 0 0 30px rgba(0,0,0,0.4);
 }
 
+/* Mantar nokta dokusu */
 .eb-cork {
   position: absolute;
   inset: 0;
   background-image:
-    radial-gradient(ellipse at 15% 25%, rgba(0,0,0,0.12) 1px, transparent 1px),
-    radial-gradient(ellipse at 55% 65%, rgba(0,0,0,0.10) 1px, transparent 1px),
-    radial-gradient(ellipse at 80% 15%, rgba(0,0,0,0.08) 1px, transparent 1px),
-    radial-gradient(ellipse at 35% 80%, rgba(0,0,0,0.10) 1px, transparent 1px);
-  background-size: 48px 48px, 72px 72px, 56px 56px, 64px 64px;
+    radial-gradient(circle at 20% 40%, rgba(180,120,60,0.4) 1px, transparent 1px),
+    radial-gradient(circle at 60% 20%, rgba(140,90,40,0.3) 1px, transparent 1px),
+    radial-gradient(circle at 80% 60%, rgba(160,100,50,0.35) 1px, transparent 1px),
+    radial-gradient(circle at 40% 80%, rgba(120,80,30,0.3) 1px, transparent 1px),
+    radial-gradient(circle at 10% 70%, rgba(190,130,70,0.25) 1px, transparent 1px),
+    radial-gradient(circle at 70% 90%, rgba(150,95,45,0.3) 1px, transparent 1px);
+  background-size: 40px 40px, 60px 60px, 50px 50px, 45px 45px, 55px 55px, 35px 35px;
   pointer-events: none;
+  opacity: 0.8;
 }
 
-/* ── SVG strings ── */
+/* ── SVG İpler ── */
 .eb-svg {
   position: absolute;
   inset: 0;
@@ -99,13 +155,13 @@
 
 .eb-string {
   stroke: #c0392b;
-  stroke-width: 2;
-  opacity: 0.75;
-  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
+  stroke-width: 1.5;
+  opacity: 0.85;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.5));
 }
 
 .eb-string-del {
-  fill: rgba(30,27,20,0.7);
+  fill: rgba(20,10,5,0.75);
   cursor: pointer;
   pointer-events: all;
   transition: fill 0.15s;
@@ -120,77 +176,105 @@
   cursor: pointer;
 }
 
-/* ── Note ── */
-.eb-note {
-  position: absolute;
-  width: 190px;
-  min-height: 130px;
-  padding: 14px 12px 32px;
-  border-radius: 2px;
-  box-shadow: 3px 4px 12px rgba(0,0,0,0.35), inset 0 0 40px rgba(0,0,0,0.04);
-  cursor: grab;
-  z-index: 3;
-  font-family: 'Courier New', monospace;
-  transition: box-shadow 0.15s, transform 0.15s;
-}
-.eb-note:active { cursor: grabbing; }
-.eb-note:hover  { box-shadow: 5px 6px 20px rgba(0,0,0,0.5); z-index: 10; }
-
-.eb-note.connecting {
-  outline: 3px solid #c0392b;
-  z-index: 12;
-}
-.eb-note.connectable {
-  outline: 2px dashed #c0392b;
-  cursor: crosshair;
-}
-
-/* ── Pin ── */
+/* ── Raptiye ── */
 .eb-pin {
   position: absolute;
-  top: -9px;
+  top: -10px;
   left: 50%;
   transform: translateX(-50%);
-  width: 18px;
-  height: 18px;
-  background: radial-gradient(circle at 35% 35%, #e74c3c, #922b21);
+  width: 16px;
+  height: 16px;
+  background: radial-gradient(circle at 35% 30%, #ff6b6b, #8b0000);
   border-radius: 50%;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.4), inset 0 -2px 3px rgba(0,0,0,0.3);
-  z-index: 4;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.6), inset 0 -1px 2px rgba(0,0,0,0.4);
+  z-index: 10;
 }
 .eb-pin::after {
   content: '';
   position: absolute;
-  top: 30%;
-  left: 30%;
-  width: 5px;
-  height: 5px;
-  background: rgba(255,255,255,0.35);
+  top: 25%;
+  left: 25%;
+  width: 4px;
+  height: 4px;
+  background: rgba(255,255,255,0.4);
   border-radius: 50%;
 }
 
+/* ── Kağıt Not ── */
+.eb-note {
+  position: absolute;
+  width: 180px;
+  min-height: 120px;
+  padding: 14px 12px 36px;
+  border-radius: 1px;
+  cursor: grab;
+  z-index: 3;
+  font-family: 'Courier New', monospace;
+  transition: box-shadow 0.15s, z-index 0s;
+
+  /* Kağıt efekti */
+  box-shadow:
+    2px 3px 8px rgba(0,0,0,0.4),
+    3px 5px 15px rgba(0,0,0,0.25),
+    inset 0 0 0 1px rgba(0,0,0,0.05);
+}
+
+.eb-note::before {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  right: 8px;
+  width: 60%;
+  height: 8px;
+  background: rgba(0,0,0,0.15);
+  filter: blur(4px);
+  border-radius: 50%;
+}
+
+.eb-note:active { cursor: grabbing; }
+.eb-note:hover  {
+  box-shadow: 4px 6px 20px rgba(0,0,0,0.55), 5px 8px 25px rgba(0,0,0,0.3);
+  z-index: 10;
+}
+
+.eb-note.connecting { outline: 2px solid #c0392b; z-index: 12; }
+.eb-note.connectable { outline: 2px dashed rgba(192,57,43,0.6); cursor: crosshair; }
+
 .eb-note-title {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: #1a1008;
   margin-bottom: 6px;
   text-decoration: underline;
   word-break: break-word;
+  line-height: 1.3;
 }
 
 .eb-note-text {
   font-size: 11px;
-  color: #333;
-  line-height: 1.5;
+  color: #2a1a08;
+  line-height: 1.6;
   word-break: break-word;
-  max-height: 80px;
+  max-height: 90px;
   overflow: hidden;
 }
 
-/* ── Note action buttons ── */
+/* Kağıt çizgileri */
+.eb-note::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 36px;
+  height: 1px;
+  background: rgba(0,0,0,0.06);
+  box-shadow: 0 -14px 0 rgba(0,0,0,0.04), 0 -28px 0 rgba(0,0,0,0.04);
+}
+
+/* ── Not butonları ── */
 .eb-note-btns {
   position: absolute;
-  bottom: 5px;
+  bottom: 6px;
   right: 6px;
   display: flex;
   gap: 3px;
@@ -198,112 +282,204 @@
   transition: opacity 0.15s;
 }
 .eb-note:hover .eb-note-btns,
-.eb-suspect:hover .eb-note-btns { opacity: 1; }
+.eb-suspect:hover .eb-note-btns,
+.eb-report-card:hover .eb-note-btns { opacity: 1; }
 
 .eb-note-btns button {
-  background: rgba(0,0,0,0.12);
+  background: rgba(0,0,0,0.15);
   border: none;
-  border-radius: 4px;
+  border-radius: 3px;
   padding: 2px 5px;
-  font-size: 12px;
+  font-size: 11px;
   cursor: pointer;
   transition: background 0.15s;
+  color: #333;
 }
-.eb-note-btns button:hover { background: rgba(0,0,0,0.25); }
+.eb-note-btns button:hover { background: rgba(0,0,0,0.3); }
 
-/* ── Suspect card ── */
+/* ── Şüpheli Kartı — Fotoğraf çerçevesi ── */
 .eb-suspect {
   position: absolute;
-  width: 140px;
-  background: #f5f0e8;
-  border: 2px solid #2c2c2c;
-  border-radius: 2px;
-  padding: 10px 10px 32px;
-  box-shadow: 3px 4px 12px rgba(0,0,0,0.4);
+  width: 130px;
+  background: #f0ebe0;
+  border: 2px solid #2c1a08;
+  border-radius: 1px;
+  padding: 8px 8px 36px;
+  box-shadow:
+    3px 4px 12px rgba(0,0,0,0.5),
+    inset 0 0 0 3px #e8e0d0,
+    inset 0 0 0 4px #2c1a08;
   cursor: grab;
   z-index: 3;
   font-family: 'Courier New', monospace;
-  transform: rotate(-1.5deg);
   transition: box-shadow 0.15s;
 }
-.eb-suspect:nth-child(even) { transform: rotate(1.5deg); }
-.eb-suspect:active { cursor: grabbing; }
-.eb-suspect:hover  { box-shadow: 5px 6px 20px rgba(0,0,0,0.5); z-index: 10; }
 
-.eb-suspect.connecting  { outline: 3px solid #c0392b; z-index: 12; }
-.eb-suspect.connectable { outline: 2px dashed #c0392b; cursor: crosshair; }
+.eb-suspect:active { cursor: grabbing; }
+.eb-suspect:hover  {
+  box-shadow: 5px 6px 20px rgba(0,0,0,0.6), inset 0 0 0 3px #e8e0d0, inset 0 0 0 4px #2c1a08;
+  z-index: 10;
+}
+
+.eb-suspect.connecting  { outline: 2px solid #c0392b; z-index: 12; }
+.eb-suspect.connectable { outline: 2px dashed rgba(192,57,43,0.6); cursor: crosshair; }
 
 .eb-suspect-pin {
   position: absolute;
-  top: -9px;
+  top: -10px;
   left: 50%;
   transform: translateX(-50%);
   width: 16px;
   height: 16px;
-  background: radial-gradient(circle at 35% 35%, #e74c3c, #922b21);
+  background: radial-gradient(circle at 35% 30%, #ff6b6b, #8b0000);
   border-radius: 50%;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+  z-index: 10;
 }
 
+/* Fotoğraf alanı */
 .eb-suspect-avatar {
-  width: 60px;
-  height: 60px;
-  background: #ccc;
-  border: 2px solid #2c2c2c;
-  border-radius: 2px;
+  width: 100%;
+  height: 90px;
+  background: linear-gradient(135deg, #888 0%, #555 100%);
+  border: 1px solid #2c1a08;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 28px;
+  font-size: 36px;
   font-weight: 700;
-  color: #555;
-  margin: 0 auto 8px;
+  color: #ddd;
+  margin-bottom: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Fotoğraf filmi efekti */
+.eb-suspect-avatar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 50%, rgba(0,0,0,0.1) 100%);
 }
 
 .eb-suspect-name {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: #1a0a00;
   text-align: center;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .eb-suspect-role {
-  font-size: 10px;
-  color: #555;
+  font-size: 9px;
+  color: #5a3a1a;
   text-align: center;
   margin-bottom: 3px;
+  font-style: italic;
 }
 
 .eb-suspect-motive {
-  font-size: 10px;
-  color: #c0392b;
+  font-size: 9px;
+  color: #8b0000;
   font-style: italic;
   text-align: center;
-  border-top: 1px dashed #ccc;
+  border-top: 1px dashed #c9a87a;
   padding-top: 4px;
-  margin-top: 4px;
+  margin-top: 3px;
+  line-height: 1.4;
 }
 
-/* ── Empty state ── */
+/* ── Boş durum ── */
 .eb-empty {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(0,0,0,0.25);
-  font-size: 15px;
+  color: rgba(0,0,0,0.2);
+  font-size: 14px;
   font-style: italic;
   font-family: 'Courier New', monospace;
   pointer-events: none;
+  text-shadow: 0 1px 2px rgba(255,255,255,0.1);
+}
+
+/* ── Olay Yeri Raporu Kartı ── */
+.eb-report-card {
+  position: absolute;
+  width: 150px;
+  background: #f5f0e0;
+  border: 2px solid #2c1a08;
+  border-radius: 1px;
+  padding: 28px 12px 18px;
+  font-family: 'Courier New', monospace;
+  text-align: center;
+  cursor: pointer;
+  z-index: 3;
+  box-shadow: 3px 4px 12px rgba(0,0,0,0.45), inset 0 0 0 2px #e8e0c8;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.eb-report-card:hover {
+  box-shadow: 5px 6px 20px rgba(0,0,0,0.6), inset 0 0 0 2px #e8e0c8;
+  z-index: 10;
+}
+
+.eb-report-pin {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 16px;
+  background: radial-gradient(circle at 35% 30%, #ff6b6b, #8b0000);
+  border-radius: 50%;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+  z-index: 10;
+}
+
+.eb-report-stamp {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  font-size: 7px;
+  font-weight: 900;
+  color: rgba(139,0,0,0.5);
+  border: 1.5px solid rgba(139,0,0,0.4);
+  padding: 1px 4px;
+  letter-spacing: 1px;
+  transform: rotate(12deg);
+}
+
+.eb-report-badge { font-size: 26px; margin-bottom: 5px; }
+
+.eb-report-title {
+  font-size: 9px;
+  font-weight: 900;
+  color: #1a0a00;
+  letter-spacing: 0.5px;
+  line-height: 1.4;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+}
+
+.eb-report-case { font-size: 8px; color: #5a3a1a; margin-bottom: 6px; }
+
+.eb-report-hint {
+  font-size: 8px;
+  color: #8a6a4a;
+  font-style: italic;
+  border-top: 1px dashed #c9a87a;
+  padding-top: 5px;
 }
 
 /* ── Modal ── */
 .eb-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.6);
+  background: rgba(0,0,0,0.7);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
@@ -312,46 +488,64 @@
 }
 
 .eb-modal {
-  background: #0f172a;
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 14px;
-  padding: 24px;
-  width: 380px;
+  background: #f5f0e0;
+  border: 2px solid #2c1a08;
+  border-radius: 1px;
+  padding: 28px 24px;
+  width: 360px;
   max-width: 95vw;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  box-shadow: 0 24px 60px rgba(0,0,0,0.5);
-  animation: ebIn 0.2s cubic-bezier(0.34,1.56,0.64,1);
+  gap: 10px;
+  box-shadow: 6px 8px 30px rgba(0,0,0,0.6), inset 0 0 0 2px #e8e0c8;
+  font-family: 'Courier New', monospace;
+  animation: ebIn 0.2s ease;
+  position: relative;
+}
+
+.eb-modal::before {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 16px;
+  background: radial-gradient(circle at 35% 30%, #ff6b6b, #8b0000);
+  border-radius: 50%;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
 }
 
 @keyframes ebIn {
-  from { transform: scale(0.95) translateY(10px); opacity: 0; }
-  to   { transform: scale(1)    translateY(0);    opacity: 1; }
+  from { transform: scale(0.95) translateY(8px); opacity: 0; }
+  to   { transform: scale(1) translateY(0); opacity: 1; }
 }
 
 .eb-modal h3 {
-  font-size: 16px;
-  font-weight: 700;
-  color: #e2e8f0;
+  font-size: 14px;
+  font-weight: 900;
+  color: #1a0a00;
   margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-decoration: underline;
 }
 
 .eb-modal input,
 .eb-modal textarea {
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 8px;
-  color: #e2e8f0;
-  padding: 9px 12px;
-  font-size: 14px;
+  background: rgba(255,255,255,0.6);
+  border: 1px solid #c9a87a;
+  border-radius: 1px;
+  color: #1a0a00;
+  padding: 8px 10px;
+  font-size: 12px;
   width: 100%;
   box-sizing: border-box;
-  font-family: inherit;
+  font-family: 'Courier New', monospace;
   resize: vertical;
 }
 .eb-modal input:focus,
-.eb-modal textarea:focus { outline: none; border-color: #667eea; }
+.eb-modal textarea:focus { outline: none; border-color: #8b0000; }
 
 .eb-modal-actions {
   display: flex;
@@ -360,91 +554,71 @@
 }
 
 .eb-btn-primary {
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: #8b0000;
   border: none;
-  color: #fff;
-  padding: 8px 20px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.15s;
-}
-.eb-btn-primary:hover { opacity: 0.9; }
-
-.eb-btn-sec {
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: #94a3b8;
-  padding: 8px 20px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
+  color: #f5f0e0;
+  padding: 7px 18px;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
   cursor: pointer;
   transition: background 0.15s;
 }
-.eb-btn-sec:hover { background: rgba(255,255,255,0.1); }
+.eb-btn-primary:hover { background: #a00000; }
 
-/* ── Connection indicator ── */
-.eb-toolbar-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.eb-conn-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.eb-conn-dot.online  { background: #34d399; box-shadow: 0 0 6px #34d399; }
-.eb-conn-dot.offline { background: #f87171; }
-
-.eb-conn-label {
+.eb-btn-sec {
+  background: rgba(0,0,0,0.08);
+  border: 1px solid #c9a87a;
+  color: #5a3a1a;
+  padding: 7px 18px;
+  font-family: 'Courier New', monospace;
   font-size: 11px;
-  color: #64748b;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
 }
+.eb-btn-sec:hover { background: rgba(0,0,0,0.15); }
 
-/* ── View popups ── */
+/* ── Not görüntüleme popup ── */
 .eb-view-modal {
   position: relative;
-  width: 680px;
+  width: 500px;
   max-width: 92vw;
-  min-height: 300px;
+  min-height: 200px;
   max-height: 80vh;
   overflow-y: auto;
-  padding: 50px 48px 40px;
-  border-radius: 3px;
+  padding: 40px 36px 32px;
+  border-radius: 1px;
   font-family: 'Courier New', monospace;
-  box-shadow: 8px 10px 40px rgba(0,0,0,0.6);
-  animation: ebIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow: 6px 8px 30px rgba(0,0,0,0.6), inset 0 0 0 2px #e8e0c8;
+  animation: ebIn 0.2s ease;
 }
 
 .eb-view-pin {
   position: absolute;
-  top: -12px;
+  top: -10px;
   left: 50%;
   transform: translateX(-50%);
-  width: 22px;
-  height: 22px;
-  background: radial-gradient(circle at 35% 35%, #e74c3c, #922b21);
+  width: 16px;
+  height: 16px;
+  background: radial-gradient(circle at 35% 30%, #ff6b6b, #8b0000);
   border-radius: 50%;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
   z-index: 5;
 }
 
 .eb-view-close {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 8px;
+  right: 8px;
   background: rgba(0,0,0,0.1);
-  border: none;
-  width: 26px;
-  height: 26px;
+  border: 1px solid rgba(0,0,0,0.15);
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 12px;
   color: #333;
   display: flex;
   align-items: center;
@@ -453,148 +627,74 @@
 .eb-view-close:hover { background: rgba(0,0,0,0.2); }
 
 .eb-view-title {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 900;
-  color: #1a1a1a;
+  color: #1a0a00;
   text-decoration: underline;
-  margin-bottom: 20px;
-  line-height: 1.3;
+  margin-bottom: 16px;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
 
 .eb-view-text {
-  font-size: 15px;
-  color: #222;
-  line-height: 2;
+  font-size: 13px;
+  color: #2a1a08;
+  line-height: 1.8;
   white-space: pre-line;
 }
 
-/* ── View suspect popup ── */
+/* ── Şüpheli görüntüleme popup ── */
 .eb-view-suspect-modal {
   position: relative;
-  width: 360px;
-  background: #f5f0e8;
-  border: 3px solid #2c2c2c;
-  border-radius: 3px;
-  padding: 50px 32px 36px;
+  width: 300px;
+  background: #f0ebe0;
+  border: 3px solid #2c1a08;
+  border-radius: 1px;
+  padding: 40px 24px 28px;
   font-family: 'Courier New', monospace;
-  box-shadow: 6px 8px 24px rgba(0,0,0,0.5);
+  box-shadow: 6px 8px 24px rgba(0,0,0,0.6), inset 0 0 0 3px #e0d8c8, inset 0 0 0 4px #2c1a08;
   text-align: center;
-  animation: ebIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  animation: ebIn 0.2s ease;
 }
 
 .eb-view-suspect-avatar {
-  width: 100px;
-  height: 100px;
-  background: #ccc;
-  border: 3px solid #2c2c2c;
-  border-radius: 3px;
+  width: 120px;
+  height: 120px;
+  background: linear-gradient(135deg, #888, #555);
+  border: 2px solid #2c1a08;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 52px;
+  font-size: 56px;
   font-weight: 700;
-  color: #555;
-  margin: 0 auto 20px;
+  color: #ddd;
+  margin: 0 auto 16px;
 }
 
 .eb-view-suspect-name {
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 900;
-  color: #1a1a1a;
-  margin-bottom: 10px;
+  color: #1a0a00;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .eb-view-suspect-role {
-  font-size: 15px;
-  color: #555;
-  margin-bottom: 14px;
+  font-size: 12px;
+  color: #5a3a1a;
+  margin-bottom: 10px;
+  font-style: italic;
 }
 
 .eb-view-suspect-motive {
-  font-size: 14px;
-  color: #c0392b;
+  font-size: 11px;
+  color: #8b0000;
   font-style: italic;
-  border-top: 1px dashed #ccc;
-  padding-top: 14px;
-  margin-top: 10px;
+  border-top: 1px dashed #c9a87a;
+  padding-top: 10px;
+  margin-top: 8px;
   line-height: 1.6;
-}
-
-/* ── Rapor kartı (panoda küçük) ── */
-.eb-report-card {
-  position: absolute;
-  width: 160px;
-  background: #f5f0e8;
-  border: 2px solid #2c2c2c;
-  border-radius: 2px;
-  padding: 28px 16px 18px;
-  font-family: 'Courier New', monospace;
-  text-align: center;
-  cursor: pointer;
-  z-index: 3;
-  box-shadow: 3px 4px 12px rgba(0,0,0,0.35);
-  transform: rotate(1deg);
-  transition: transform 0.15s, box-shadow 0.15s;
-}
-
-.eb-report-card:hover {
-  transform: rotate(0deg) scale(1.05);
-  box-shadow: 5px 6px 20px rgba(0,0,0,0.5);
-}
-
-.eb-report-pin {
-  position: absolute;
-  top: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 18px;
-  height: 18px;
-  background: radial-gradient(circle at 35% 35%, #e74c3c, #922b21);
-  border-radius: 50%;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.4);
-}
-
-.eb-report-stamp {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  font-size: 8px;
-  font-weight: 900;
-  color: rgba(180,0,0,0.5);
-  border: 1.5px solid rgba(180,0,0,0.4);
-  padding: 1px 5px;
-  letter-spacing: 2px;
-  transform: rotate(10deg);
-}
-
-.eb-report-badge {
-  font-size: 28px;
-  margin-bottom: 6px;
-}
-
-.eb-report-title {
-  font-size: 10px;
-  font-weight: 900;
-  color: #1a1a1a;
-  letter-spacing: 1px;
-  line-height: 1.4;
-  margin-bottom: 6px;
-}
-
-.eb-report-case {
-  font-size: 9px;
-  color: #555;
-  margin-bottom: 8px;
-}
-
-.eb-report-hint {
-  font-size: 9px;
-  color: #888;
-  font-style: italic;
-  border-top: 1px dashed #ccc;
-  padding-top: 6px;
 }
 
 /* ── Rapor popup ── */
@@ -607,7 +707,7 @@
 .eb-report-popup {
   position: relative;
   width: 100%;
-  max-width: 920px;
+  max-width: 900px;
   margin: 0 auto;
 }
 
@@ -616,14 +716,20 @@
   top: 20px;
   right: 20px;
   z-index: 9999;
-  background: rgba(0,0,0,0.7);
-  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(0,0,0,0.75);
+  border: 1px solid rgba(255,255,255,0.15);
   color: #e2e8f0;
-  padding: 8px 18px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
+  padding: 7px 16px;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
   cursor: pointer;
   transition: background 0.15s;
 }
 .eb-report-popup-close:hover { background: rgba(0,0,0,0.9); }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}

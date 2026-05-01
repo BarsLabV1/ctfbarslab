@@ -5,3 +5,7 @@
 **/build/
 .vs/
 docker-data/
+DetectiveCTF.API/wwwroot/uploads/
+DetectiveCTF.API/detectivectf.db
+DetectiveCTF.API/detectivectf.db-shm
+DetectiveCTF.API/detectivectf.db-wal

@@ -9,7 +9,7 @@ public class DockerService
     private readonly ILogger<DockerService> _logger;
 
     // bunu kendi makine IP'ne göre değiştir
-    private const string HOST_IP = "10.10.74.179";
+    private const string HOST_IP = "192.168.1.107";
 
     public DockerService(ILogger<DockerService> logger)
     {
@@ -93,6 +93,11 @@ public class DockerService
 
             var finalPort = webPort ?? sshPort ?? hostPort;
 
+            // Container'ın internal IP'sini al (site IP'siyle karışmasın)
+            var containerIp = await RunDockerCommand(
+                $"inspect -f {{{{range .NetworkSettings.Networks}}}}{{{{.IPAddress}}}}{{{{end}}}} {containerId}");
+            var vmIp = string.IsNullOrWhiteSpace(containerIp) ? HOST_IP : containerIp.Trim();
+
             return new VMInstance
             {
                 ChallengeId = challenge.Id,
@@ -100,7 +105,7 @@ public class DockerService
                 TeamId = teamId,
                 ContainerId = containerId,
                 ContainerName = containerName,
-                IPAddress = HOST_IP,
+                IPAddress = vmIp,
                 Port = finalPort,
                 Status = "running",
                 ExpiresAt = DateTime.UtcNow.AddHours(2)
@@ -164,24 +169,38 @@ public class DockerService
             var suffix = userId.HasValue ? $"u{userId}" : $"t{teamId}";
             var containerName = $"ctf_kali_{suffix}_{Guid.NewGuid().ToString()[..6]}";
 
+            // dorowu/ubuntu-desktop-lxde-vnc — port 6080 HTTP, güvenli değil uyarısı yok
             var containerId = await RunDockerCommand(
                 $"run -d --name {containerName} -P " +
-                $"-e TARGET_IP={targetIp} -e VNC_PW=kali123 " +
-                $"--memory=2g --cpus=1.5 --shm-size=512m kasmweb/kali-rolling-desktop:1.15.0");
+                $"--memory=2g --cpus=1.5 --shm-size=512m " +
+                $"dorowu/ubuntu-desktop-lxde-vnc:focal");
 
             if (string.IsNullOrWhiteSpace(containerId) || containerId.Length < 12)
                 return null;
 
-            await Task.Delay(8000);
+            await Task.Delay(15000);
 
             var portOutput = await RunDockerCommand($"port {containerId}");
-            var hostPort = ParseHostPort(portOutput, 6901);
+
+            // dorowu: port 6080 HTTP
+            int hostPort = 0;
+            foreach (var line in portOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (line.StartsWith("6080/") && line.Contains("->"))
+                {
+                    var p = line.Split("->").Last().Trim().Split(':').Last().Trim();
+                    if (int.TryParse(p, out var hp)) { hostPort = hp; break; }
+                }
+            }
+            if (hostPort == 0) hostPort = ParseHostPort(portOutput, 6080);
 
             if (hostPort == 0)
             {
                 await RunDockerCommand($"rm -f {containerId}");
                 return null;
             }
+
+            _logger.LogInformation("Kali başlatıldı: {Name} → port {Port}", containerName, hostPort);
 
             return new VMInstance
             {

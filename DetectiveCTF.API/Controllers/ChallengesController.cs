@@ -130,6 +130,54 @@ public class ChallengesController : ControllerBase
         }
     }
 
+    // Bağımsız Kali masaüstü — challenge'a bağlı değil
+    [HttpPost("start-kali-standalone")]
+    public async Task<IActionResult> StartKaliStandalone(
+        [FromServices] DetectiveCTF.Infrastructure.Services.DockerService dockerService,
+        [FromServices] DetectiveCTF.Infrastructure.Persistence.AppDbContext db)
+    {
+        var userId = GetUserId();
+        try
+        {
+            // Zaten çalışan Kali var mı?
+            var existing = await db.VMInstances
+                .FirstOrDefaultAsync(v => v.UserId == userId && v.Status == "running"
+                    && v.ContainerName.Contains("kali"));
+            if (existing != null)
+                return Ok(new { kaliPort = existing.Port, ipAddress = existing.IPAddress, message = "Kali zaten çalışıyor" });
+
+            var kali = await dockerService.StartKaliDesktop(userId, null, "");
+            if (kali == null)
+                return StatusCode(500, new { message = "Kali başlatılamadı" });
+
+            db.VMInstances.Add(kali);
+            await db.SaveChangesAsync();
+
+            return Ok(new { kaliPort = kali.Port, ipAddress = kali.IPAddress, message = "Kali masaüstü başlatıldı" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("stop-kali-standalone")]
+    public async Task<IActionResult> StopKaliStandalone(
+        [FromServices] DetectiveCTF.Infrastructure.Services.DockerService dockerService,
+        [FromServices] DetectiveCTF.Infrastructure.Persistence.AppDbContext db)
+    {
+        var userId = GetUserId();
+        var kali = await db.VMInstances
+            .FirstOrDefaultAsync(v => v.UserId == userId && v.Status == "running"
+                && v.ContainerName.Contains("kali"));
+        if (kali == null) return Ok(new { message = "Çalışan Kali yok" });
+
+        await dockerService.StopVM(kali);
+        kali.Status = "stopped";
+        await db.SaveChangesAsync();
+        return Ok(new { message = "Kali durduruldu" });
+    }
+
     [HttpPost("{id}/stop-vm")]
     public async Task<IActionResult> StopVm(int id)
     {

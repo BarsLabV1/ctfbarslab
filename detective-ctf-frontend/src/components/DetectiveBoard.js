@@ -80,7 +80,7 @@ const VMPanel = ({ challenges, caseId, onRefresh }) => {
 
           {!vmData ? (
             <button className="db-vm-start" onClick={startVM} disabled={starting}>
-              {starting ? '⏳ Başlatılıyor...' : '🚀 Makineyi Başlat'}
+              {starting ? '⏳ Başlatılıyor...' : '🚀 Senaryoyu Başlat'}
             </button>
           ) : (
             <>
@@ -89,27 +89,26 @@ const VMPanel = ({ challenges, caseId, onRefresh }) => {
                 <span>Çalışıyor</span>
               </div>
 
-              {/* Web sitesi varsa büyük buton */}
-              {vmData.webUrl && (
-                <a href={vmData.webUrl} target="_blank" rel="noopener noreferrer" className="db-vm-web-btn">
-                  🌐 Web Sitesini Aç
-                </a>
-              )}
-
-              {/* SSH bilgisi */}
-              {!vmData.webUrl && (
-                <div className="db-vm-info">
-                  <span>SSH:</span>
-                  <code>{vmData.ipAddress}:{vmData.port}</code>
+              {/* Sadece IP — tıklayınca kopyala */}
+              <div
+                className="db-vm-ip-copy"
+                onClick={() => {
+                  navigator.clipboard?.writeText(vmData.ipAddress).catch(() => {});
+                  const el = document.getElementById('db-vm-copy-hint');
+                  if (el) { el.textContent = '✓ Kopyalandı'; setTimeout(() => { el.textContent = '📋 Kopyala'; }, 2000); }
+                }}
+                title="Kopyalamak için tıkla"
+              >
+                <code>{vmData.ipAddress}</code>
+                <span id="db-vm-copy-hint" style={{fontSize:9,color:'var(--text-muted)',fontFamily:'var(--font-mono)',letterSpacing:1}}>📋 Kopyala</span>
+              </div>
+              {vmData.port && (
+                <div style={{fontFamily:'var(--font-mono)',fontSize:10,color:'var(--text-muted)',padding:'2px 0',letterSpacing:1}}>
+                  Port: <code style={{color:'#00d4ff'}}>{vmData.port}</code>
                 </div>
               )}
 
               <div className="db-vm-btns">
-                {vmData.terminalPort && (
-                  <a href={`http://localhost:${vmData.terminalPort}`} target="_blank" rel="noopener noreferrer" className="db-vm-btn-sec">
-                    🖥️ Terminal Aç
-                  </a>
-                )}
                 <button className="db-vm-btn-stop" onClick={stopVM} disabled={stopping}>
                   {stopping ? '...' : '⏹ Durdur'}
                 </button>
@@ -219,23 +218,23 @@ const AdminBoardCard = ({ card, onClick, onDragStart, wasDragged }) => {
   );
 };
 
-/* ── Kart pozisyonları — sıralı zincir layout ── */
+/* ── Kart pozisyonları — API'den gelen posX/posY kullan ── */
 const getCardLayout = (challenges) => {
-  // Sorular soldan sağa zincir şeklinde dizilir
   return challenges.map((ch, i) => ({
     ...ch,
     pos: {
-      x: 800 + i * 320,
-      y: 200 + (i % 2 === 0 ? 0 : 160),
+      // Admin panelden ayarlanmışsa onu kullan (posX veya posY sıfırdan farklıysa)
+      x: (ch.posX !== undefined && ch.posX !== null && ch.posX !== 0) ? ch.posX : 600 + i * 300,
+      y: (ch.posY !== undefined && ch.posY !== null && ch.posY !== 0) ? ch.posY : 180 + (i % 2 === 0 ? 0 : 140),
     },
     rot: (i % 2 === 0 ? -1.5 : 1.5),
   }));
 };
 
-/* ── İp çizimi için merkez noktası ── */
+/* ── İp çizimi için merkez noktası — raptiyenin tam yeri ── */
 const cardCenter = (pos) => ({
-  x: pos.x + 100,
-  y: pos.y + 120,
+  x: pos.x + 95,  // kartın yatay ortası (190/2)
+  y: pos.y - 2,   // raptiyenin tam üstü
 });
 
 /* ══════════════════════════════════════════
@@ -247,8 +246,8 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
   const hubRef      = useRef(null);
 
   // Pan/Zoom state
-  const [pan,   setPan]   = useState({ x: -100, y: -50 });
-  const [scale, setScale] = useState(0.75);
+  const [pan,   setPan]   = useState({ x: 50, y: 80 });
+  const [scale, setScale] = useState(0.85);
   const isPanning = useRef(false);
   const panStart  = useRef({ x: 0, y: 0 });
 
@@ -259,6 +258,7 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
   const [suspects,   setSuspects]   = useState([]);
   const [boardCards, setBoardCards] = useState([]); // admin kartları
   const [evidences,  setEvidences]  = useState([]); // delil kartları
+  const [adminStrings, setAdminStrings] = useState([]); // admin'den çekilen ipler
 
   // UI state
   const [selectedCard,  setSelectedCard]  = useState(null); // sağ panel (flag girişi)
@@ -279,7 +279,23 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
   useEffect(() => {
     if (!caseId) return;
     api.get(`/board-cards/case/${caseId}`)
-      .then(res => setBoardCards(res.data))
+      .then(res => {
+        const all = res.data;
+        // String kartlarını ip olarak parse et, diğerleri normal kart
+        const stringCards = all.filter(c => c.type === 'string');
+        const normalCards = all.filter(c => c.type !== 'string');
+        setBoardCards(normalCards);
+        // İpleri state'e ekle (userNotes/strings ile birleştir)
+        const parsedStrings = stringCards.map(c => {
+          try {
+            const data = JSON.parse(c.content || '{}');
+            return { id: `admin_${c.id}`, ...data, isAdmin: true };
+          } catch { return null; }
+        }).filter(Boolean);
+        if (parsedStrings.length > 0) {
+          setAdminStrings(parsedStrings);
+        }
+      })
       .catch(() => {});
     // Delilleri yükle — public endpoint
     api.get(`/challenges/case/${caseId}/evidences`)
@@ -470,7 +486,7 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
   };
 
   /* ── Senaryo kartı merkezi ── */
-  const scenarioCenter = { x: 300 + 180, y: 300 + 15 };
+  const scenarioCenter = { x: 120 + 120, y: 180 - 2 };
 
   /* ── Render ── */
   const solvedIds = new Set(challenges.filter(c => c.isSolved).map(c => c.id));
@@ -487,7 +503,12 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
     >
       <div
         className="db-board"
-        style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})` }}
+        style={{
+          transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
+          backgroundImage: `url(${process.env.PUBLIC_URL}/pano-cercevesiz.png)`,
+          backgroundSize: '1024px 576px',
+          backgroundRepeat: 'repeat',
+        }}
       >
         {/* ── SVG İpler ── */}
         <svg className="db-svg">
@@ -568,18 +589,48 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
               />
             );
           })}
+
+          {/* Admin'den çekilen ipler */}
+          {adminStrings.map(s => {
+            const getCenter = (kind, id) => {
+              if (kind === 'question') {
+                const ch = challenges.find(c => c.id === parseInt(id));
+                return ch ? cardCenter(ch.pos) : null;
+              } else {
+                const bc = boardCards.find(c => c.id === parseInt(id));
+                return bc ? { x: bc.posX + 80, y: bc.posY + 20 } : null;
+              }
+            };
+            const from = getCenter(s.fromKind, s.fromId);
+            const to   = getCenter(s.toKind,   s.toId);
+            if (!from || !to) return null;
+            return (
+              <path
+                key={`admin_str_${s.id}`}
+                d={getStringPath(from, to)}
+                stroke="#c0392b"
+                strokeWidth={2}
+                fill="none"
+                strokeLinecap="round"
+                opacity={0.85}
+              />
+            );
+          })}
         </svg>
 
-        {/* ── Senaryo Kartı ── */}
+        {/* ── Senaryo Kartı — Olay dosyası ── */}
         {caseData && (
-          <div className="db-card db-scenario-card" style={{ left: 300, top: 300, transform: 'rotate(-1deg)' }}>
+          <div className="db-card db-scenario-card" style={{ left: 120, top: 180, transform: 'rotate(-1.5deg)' }}>
             <div className="db-pin db-pin-red"/>
             <div className="db-card-stamp">GİZLİ</div>
-            <div className="db-scenario-badge">🛡️</div>
+            {/* Dosya numarası */}
+            <div style={{fontFamily:'Courier New',fontSize:8,color:'rgba(0,0,0,0.4)',marginBottom:6,letterSpacing:1}}>
+              DOSYA #{String(caseData.id || 1).padStart(4,'0')}
+            </div>
             <div className="db-scenario-title">{caseData.title}</div>
-            <div className="db-scenario-desc">{(caseData.story || caseData.description || '').slice(0, 120)}...</div>
+            <div className="db-scenario-desc">{(caseData.story || caseData.description || '').slice(0, 100)}...</div>
             <div className="db-scenario-meta">
-              <span>⭐ {caseData.totalPoints} puan</span>
+              <span>⭐ {caseData.totalPoints}</span>
               <span>🎯 {challenges.length} soru</span>
             </div>
             <button className="db-report-btn" onClick={() => setViewReport(true)}>
@@ -588,42 +639,145 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
           </div>
         )}
 
-        {/* ── Soru Kartları ── */}
+        {/* ── Soru Kartları — Polaroid CSS stili ── */}
         {challenges.map(ch => {
-          const locked  = !ch.isUnlocked;
-          const solved  = ch.isSolved;
-          const icon    = CATEGORY_ICONS[ch.category] || '📝';
-          const isOpen  = selectedCard?.id === ch.id;
+          const locked = !ch.isUnlocked;
+          const solved = ch.isSolved;
+          const icon   = CATEGORY_ICONS[ch.category] || '📝';
+
+          // Kategori rengi — fotoğraf alanı arka planı
+          const catBg = {
+            OSINT:'#1a2a1a', Web:'#0d1a2e', Forensics:'#2a1a1a',
+            Crypto:'#1a1a2e', Reverse:'#1a2a1a', PWN:'#2a1a0d',
+            Network:'#0d2a2a', Final:'#2a2a0d', SSH:'#1a2a0d',
+          };
+          const bg = catBg[ch.category] || '#1a1a1a';
 
           return (
             <div
               key={ch.id}
-              className={`db-card db-challenge-card ${locked ? 'db-locked' : ''} ${solved ? 'db-solved' : ''} ${isOpen ? 'db-open' : ''}`}
-              style={{ left: ch.pos.x, top: ch.pos.y, transform: `rotate(${ch.rot}deg)` }}
+              className={`db-card ${locked ? 'db-locked' : ''}`}
+              style={{
+                left: ch.pos.x, top: ch.pos.y,
+                transform: `rotate(${ch.rot}deg)`,
+                width: 190, height: 240,
+                cursor: locked ? 'default' : 'pointer',
+                position: 'absolute', zIndex: 2,
+                background: '#f0ece0',
+                boxShadow: '4px 6px 18px rgba(0,0,0,0.55), 8px 10px 28px rgba(0,0,0,0.35)',
+                padding: '8px 8px 36px 8px',
+                borderRadius: 2,
+              }}
               onClick={() => !locked && openCardPopup(ch)}
-              onDoubleClick={e => { e.stopPropagation(); !locked && openCardPopup(ch); }}
             >
+              {/* Kırmızı raptiye */}
               <div className="db-pin"/>
-              {locked && <div className="db-lock-icon">🔒</div>}
-              {solved && <div className="db-solved-stamp">ÇÖZÜLDÜ</div>}
-              <div className="db-card-icon">{icon}</div>
-              <div className="db-card-order">#{ch.order}</div>
-              <div className="db-card-title">{ch.title}</div>
-              <div className="db-card-cat">{ch.category}</div>
-              <div className="db-card-pts">⭐ {ch.points}</div>
-              {locked && ch.requiredChallengeTitle && (
-                <div className="db-card-req">🔒 {ch.requiredChallengeTitle}</div>
-              )}
+
+              {/* Kategori etiketi */}
+              <div style={{
+                position:'absolute', top:0, right:0,
+                background: locked ? '#555' : solved ? '#8b0000' : '#5a3a00',
+                color:'#f5e8d0', fontSize:7, fontWeight:900,
+                padding:'3px 8px', letterSpacing:1,
+                fontFamily:'"Courier New", Courier, monospace',
+                zIndex:3,
+              }}>{ch.category?.toUpperCase()}</div>
+
+              {/* Sıra */}
+              <div style={{
+                position:'absolute', top:4, left:8,
+                fontFamily:'"Courier New", Courier, monospace',
+                fontSize:10, fontWeight:900,
+                color:'rgba(60,30,10,0.45)', zIndex:3,
+              }}>#{ch.order}</div>
+
+              {/* Fotoğraf alanı — ikon büyük */}
+              <div style={{
+                width:'100%', height:'100%',
+                background: locked ? '#111' : bg,
+                display:'flex', flexDirection:'column',
+                alignItems:'center', justifyContent:'center',
+                gap:8, overflow:'hidden', borderRadius:1,
+                position:'relative',
+              }}>
+                {/* Kilitli overlay */}
+                {locked && (
+                  <div style={{
+                    position:'absolute', inset:0,
+                    background:'rgba(0,0,0,0.7)',
+                    display:'flex', flexDirection:'column',
+                    alignItems:'center', justifyContent:'center',
+                    gap:6, zIndex:5,
+                  }}>
+                    <span style={{fontSize:32}}>🔒</span>
+                    {ch.requiredChallengeTitle && (
+                      <span style={{
+                        fontFamily:'"Courier New",monospace', fontSize:8,
+                        color:'rgba(255,255,255,0.7)', textAlign:'center',
+                        padding:'0 10px', lineHeight:1.4,
+                      }}>"{ch.requiredChallengeTitle}"<br/>çözülmeli</span>
+                    )}
+                  </div>
+                )}
+
+                {/* ÇÖZÜLDÜ damgası */}
+                {solved && (
+                  <div style={{
+                    position:'absolute', top:'50%', left:'50%',
+                    transform:'translate(-50%,-50%) rotate(-12deg)',
+                    border:'4px solid rgba(180,0,0,0.85)',
+                    borderRadius:6, padding:'5px 12px',
+                    zIndex:6, pointerEvents:'none',
+                  }}>
+                    <span style={{
+                      fontFamily:'Impact, Arial Black, sans-serif',
+                      fontSize:22, fontWeight:900,
+                      color:'rgba(180,0,0,0.85)', letterSpacing:3,
+                      display:'block',
+                    }}>ÇÖZÜLDÜ</span>
+                  </div>
+                )}
+
+                {/* Büyük ikon */}
+                <span style={{fontSize:56, lineHeight:1, filter: solved ? 'grayscale(30%)' : 'none'}}>{icon}</span>
+              </div>
+
+              {/* Alt beyaz şerit */}
+              <div style={{
+                position:'absolute', bottom:0, left:0, right:0,
+                height:36, background:'#f0ece0',
+                display:'flex', flexDirection:'column',
+                alignItems:'center', justifyContent:'center',
+                borderTop:'1px solid rgba(0,0,0,0.08)',
+                zIndex:4, padding:'0 6px',
+              }}>
+                <span style={{
+                  fontFamily:'"Courier New", Courier, monospace',
+                  fontSize:9, fontWeight:900, color:'#2a1a08',
+                  textAlign:'center', textTransform:'uppercase',
+                  letterSpacing:0.5, lineHeight:1.2,
+                  overflow:'hidden', textOverflow:'ellipsis',
+                  whiteSpace:'nowrap', maxWidth:'100%',
+                }}>{ch.title}</span>
+                <span style={{
+                  fontFamily:'"Courier New", Courier, monospace',
+                  fontSize:8, color:'#8b6030',
+                }}>⭐ {ch.points}</span>
+              </div>
             </div>
           );
         })}
 
-        {/* ── Kullanıcı Notları ── */}
+        {/* ── Kullanıcı Notları — Sarı sticky note ── */}
         {userNotes.map(n => (
           <div
             key={n.id}
             className="db-card db-user-note"
-            style={{ left: n.x, top: n.y, background: n.color || '#bacb9a', transform: `rotate(${n.rot || -1}deg)` }}
+            style={{
+              left: n.x, top: n.y,
+              transform: `rotate(${n.rot || -1}deg)`,
+              background: '#f5e642',
+            }}
           >
             <div className="db-pin"/>
             <div className="db-note-title">{n.title}</div>
@@ -631,12 +785,19 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
           </div>
         ))}
 
-        {/* ── Şüpheliler ── */}
+        {/* ── Şüpheliler — Polaroid çerçeve ── */}
         {suspects.map(s => (
           <div
             key={s.id}
             className="db-card db-suspect-card"
-            style={{ left: s.x, top: s.y, transform: 'rotate(-1.5deg)' }}
+            style={{
+              left: s.x, top: s.y,
+              transform: 'rotate(-1.5deg)',
+              backgroundImage: `url('/polaroid-frame.png')`,
+              backgroundSize: '100% 100%',
+              backgroundRepeat: 'no-repeat',
+              background: 'none',
+            }}
           >
             <div className="db-pin db-pin-red"/>
             {s.imageUrl ? (
@@ -655,7 +816,7 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
           <AdminBoardCard
             key={bc.id}
             card={bc}
-            onDragStart={(e) => startAdminDrag(e, bc.id)}
+            onDragStart={() => {}} /* kullanıcı sürükleyemez */
             wasDragged={adminDragged}
             onClick={() => setViewCard({ ...bc, isAdminCard: true })}
           />
@@ -666,29 +827,104 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
           const BASE = (process.env.REACT_APP_API_URL || 'http://localhost:5001/api').replace('/api', '');
           const relChallenge = challenges.find(c => c.id === ev.challengeId);
           if (!relChallenge) return null;
-          // Aynı soruya ait delillerin index'ini bul
           const sameChEvidences = evidences.filter(e => e.challengeId === ev.challengeId);
           const evIdx = sameChEvidences.findIndex(e => e.id === ev.id);
-          const evX = relChallenge.pos.x - 80 + evIdx * 180;
-          const evY = relChallenge.pos.y + 300;
-          const TYPE_ICONS = { video:'🎥', audio:'🎵', image:'🖼️', document:'📄', log:'📋', file:'📁' };
-          const icon = TYPE_ICONS[ev.type] || '📁';
+          const evX = relChallenge.pos.x - 80 + evIdx * 190;
+          const evY = relChallenge.pos.y + 310;
           const url = ev.fileUrl?.startsWith('http') ? ev.fileUrl : BASE + ev.fileUrl;
+          const rot = evIdx % 2 === 0 ? -2 : 2;
 
           return (
             <div
               key={`ev_${ev.id}`}
-              className="db-card db-evidence-card"
-              style={{ left: evX, top: evY, transform: `rotate(${evIdx % 2 === 0 ? -1.5 : 1.5}deg)` }}
+              className="db-card"
+              style={{
+                left: evX, top: evY,
+                transform: `rotate(${rot}deg)`,
+                width: 160, height: 200,
+                cursor: 'pointer',
+                position: 'absolute',
+                zIndex: 2,
+                background: '#f0ece0',
+                boxShadow: '4px 6px 18px rgba(0,0,0,0.55), 8px 10px 28px rgba(0,0,0,0.35)',
+                padding: '8px 8px 32px 8px',
+                borderRadius: 2,
+              }}
               onClick={() => setViewCard({ ...ev, isEvidenceCard: true, evUrl: url })}
             >
-              <div className="db-pin db-pin-blue" />
-              <div className="db-evidence-card-icon">{icon}</div>
-              {ev.type === 'image' && (
-                <img src={url} alt={ev.title} className="db-evidence-card-thumb" />
-              )}
-              <div className="db-evidence-card-title">{ev.title}</div>
-              <div className="db-evidence-card-type">{ev.type?.toUpperCase()}</div>
+              {/* Kırmızı raptiye */}
+              <div style={{
+                position:'absolute', top:-9, left:'50%',
+                transform:'translateX(-50%)',
+                width:16, height:16, borderRadius:'50%',
+                background:'radial-gradient(circle at 35% 30%, #ff6b6b, #cc2222 45%, #8b0000 80%)',
+                boxShadow:'1px 3px 6px rgba(0,0,0,0.7)',
+                zIndex:10,
+              }}/>
+
+              {/* Fotoğraf alanı — tam dolu */}
+              <div style={{
+                width:'100%',
+                height:'100%',
+                overflow:'hidden',
+                background:'#111',
+                borderRadius:1,
+                position:'relative',
+              }}>
+                {/* Tür etiketi — kartın üstünü komple kapat */}
+                <div style={{
+                  position:'absolute', top:0, left:0, right:0, zIndex:5,
+                  background:'rgba(0,0,0,0.88)',
+                  color:'#fff', fontSize:13, fontWeight:900,
+                  padding:'8px 10px', letterSpacing:2,
+                  fontFamily:'"Courier New", Courier, monospace',
+                  display:'flex', alignItems:'center', justifyContent:'center', gap:8,
+                }}>
+                  {ev.type === 'video'    && <><span style={{fontSize:18}}>🎥</span> VİDEO</>}
+                  {ev.type === 'image'    && <><span style={{fontSize:18}}>🖼️</span> FOTOĞRAF</>}
+                  {ev.type === 'audio'    && <><span style={{fontSize:18}}>🎵</span> SES KAYDI</>}
+                  {ev.type === 'document' && <><span style={{fontSize:18}}>📄</span> BELGE</>}
+                  {!['video','image','audio','document'].includes(ev.type) && <><span style={{fontSize:18}}>📁</span> DOSYA</>}
+                </div>
+                {ev.type === 'image' && (
+                  <img src={url} alt={ev.title}
+                    style={{width:'100%', height:'100%', objectFit:'cover'}}/>
+                )}
+                {ev.type === 'video' && (
+                  <video src={url} muted
+                    style={{width:'100%', height:'100%', objectFit:'cover'}}/>
+                )}
+                {ev.type === 'audio' && (
+                  <div style={{width:'100%',height:'100%',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',background:'#1a0a2e',gap:8}}>
+                    <span style={{fontSize:40}}>🎵</span>
+                    <span style={{fontFamily:'"Courier New",monospace',fontSize:9,color:'#c084fc'}}>SES KAYDI</span>
+                  </div>
+                )}
+                {!['image','video','audio'].includes(ev.type) && (
+                  <div style={{width:'100%',height:'100%',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',background:'#1a1208',gap:8}}>
+                    <span style={{fontSize:40}}>{ev.type==='document'?'📄':'📁'}</span>
+                    <span style={{fontFamily:'"Courier New",monospace',fontSize:9,color:'#c9975a',textTransform:'uppercase'}}>{ev.type}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Alt beyaz şerit — başlık */}
+              <div style={{
+                position:'absolute', bottom:0, left:0, right:0,
+                height:32, background:'#f0ece0',
+                display:'flex', alignItems:'center', justifyContent:'center',
+                borderTop:'1px solid rgba(0,0,0,0.08)',
+                zIndex:4,
+              }}>
+                <span style={{
+                  fontFamily:'"Courier New", Courier, monospace',
+                  fontSize:9, fontWeight:900,
+                  color:'#2a1a08', textAlign:'center',
+                  padding:'0 6px', lineHeight:1.2,
+                  overflow:'hidden', textOverflow:'ellipsis',
+                  whiteSpace:'nowrap', maxWidth:'100%',
+                }}>{ev.title}</span>
+              </div>
             </div>
           );
         })}
@@ -701,7 +937,7 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
         <div className="db-zoom-info">{Math.round(scale * 100)}%</div>
         <button className="db-tool-btn" onClick={() => setScale(s => Math.min(2.0, s * 1.1))}>+</button>
         <button className="db-tool-btn" onClick={() => setScale(s => Math.max(0.3, s * 0.9))}>−</button>
-        <button className="db-tool-btn" onClick={() => { setPan({ x: -100, y: -50 }); setScale(0.75); }}>
+        <button className="db-tool-btn" onClick={() => { setPan({ x: 50, y: 80 }); setScale(0.85); }}>
           ⌂
         </button>
       </div>

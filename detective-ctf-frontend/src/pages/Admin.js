@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../hooks/useToast';
+import AdminBoard from '../components/AdminBoard';
 import './Admin.css';
 
 const CATEGORIES = ['OSINT', 'Web', 'Forensics', 'Crypto', 'Reverse', 'PWN', 'Network', 'Final'];
@@ -393,14 +394,14 @@ const Admin = () => {
       </div>
 
       <div className="adm-tabs">
-        {['cases','questions','evidences','boardcards','dockerfiles','users'].map(t => (
+        {['cases','questions','evidences','boardcards','pano','dockerfiles','users'].map(t => (
           <button key={t} className={`adm-tab ${tab===t?'active':''}`} onClick={() => setTab(t)}>
-            {{ cases:'Senaryolar', questions:'Sorular', evidences:'Deliller', boardcards:'Pano Kartları', dockerfiles:'Docker Images', users:'Kullanıcılar' }[t]}
+            {{ cases:'Senaryolar', questions:'Sorular', evidences:'Deliller', boardcards:'Pano Kartları', pano:'🗺️ Pano Düzenleyici', dockerfiles:'Docker Images', users:'Kullanıcılar' }[t]}
           </button>
         ))}
       </div>
 
-      <div className="adm-content">
+      <div className={`adm-content ${tab === 'pano' ? 'adm-content-fullscreen' : ''}`}>
 
         {/* ── CASES ── */}
         {tab === 'cases' && (
@@ -656,6 +657,11 @@ const Admin = () => {
               </tbody>
             </table>
           </>
+        )}
+
+        {/* ── PANO DÜZENLEYİCİ ── */}
+        {tab === 'pano' && (
+          <AdminBoard cases={cases} questions={questions} onQuestionsChanged={fetchAll} />
         )}
 
         {/* ── USERS ── */}

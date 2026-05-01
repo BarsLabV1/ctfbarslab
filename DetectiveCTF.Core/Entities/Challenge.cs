@@ -27,6 +27,10 @@ public class Challenge
     // { reportSection: {title, type, content}, boardNote: {title, text}, boardSuspect: {name, role, motive} }
     public string? UnlockContent { get; set; }
     
+    // Pano pozisyonu (admin panelden ayarlanır)
+    public int PosX { get; set; } = 0;
+    public int PosY { get; set; } = 0;
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     
     public Case Case { get; set; } = null!;

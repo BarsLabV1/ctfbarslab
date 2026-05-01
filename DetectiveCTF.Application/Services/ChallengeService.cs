@@ -82,7 +82,9 @@ public class ChallengeService : IChallengeService
                 isUnlocked,
                 isSolved,
                 myProgress?.Attempts ?? 0,
-                c.RequiredChallenge?.Title
+                c.RequiredChallenge?.Title,
+                c.PosX,
+                c.PosY
             );
         }).ToList();
     }

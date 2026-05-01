@@ -1,7 +1,83 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
+import { useToast } from '../hooks/useToast';
 import './Navbar.css';
+
+/* ── BarsBox Paneli (Navbar'da) ── */
+const KaliWidget = () => {
+  const { showToast } = useToast();
+  const [kaliData, setKaliData] = useState(null);
+  const [starting, setStarting] = useState(false);
+  const [stopping, setStopping] = useState(false);
+  const [open,     setOpen]     = useState(false);
+
+  const startKali = async () => {
+    setStarting(true);
+    try {
+      const res = await api.post('/challenges/start-kali-standalone');
+      setKaliData(res.data);
+      showToast('BarsBox başlatıldı!', 'success');
+    } catch (err) {
+      showToast(err.response?.data?.message || 'BarsBox başlatılamadı', 'error');
+    } finally { setStarting(false); }
+  };
+
+  const stopKali = async () => {
+    setStopping(true);
+    try {
+      await api.post('/challenges/stop-kali-standalone');
+      setKaliData(null);
+      showToast('BarsBox durduruldu', 'info');
+    } catch { showToast('Durdurulamadı', 'error'); }
+    finally { setStopping(false); }
+  };
+
+  return (
+    <div className="kali-widget">
+      <button
+        className={`kali-widget-btn ${kaliData ? 'running' : ''}`}
+        onClick={() => setOpen(o => !o)}
+      >
+        🖥️ BARSBOX {kaliData ? <span className="kali-dot-sm"/> : null} {open ? '▲' : '▼'}
+      </button>
+
+      {open && (
+        <div className="kali-widget-dropdown">
+          {!kaliData ? (
+            <>
+              <p className="kali-widget-desc">Tarayıcıdan Ubuntu masaüstüne eriş.</p>
+              <button className="kali-widget-start" onClick={startKali} disabled={starting}>
+                {starting ? '⏳ Başlatılıyor...' : '🚀 BarsBox Başlat'}
+              </button>
+            </>
+          ) : (
+            <div className="kali-widget-active">
+              <div className="kali-widget-status">
+                <span className="kali-dot-lg" /> BARSBOX ÇALIŞIYOR
+              </div>
+              <a
+                href={`http://${kaliData.ipAddress}:${kaliData.kaliPort}/`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="kali-widget-open"
+              >
+                🖥️ Masaüstünü Aç
+              </a>
+              <div className="kali-widget-port">
+                <code>{kaliData.ipAddress}:{kaliData.kaliPort}</code>
+              </div>
+              <button className="kali-widget-stop" onClick={stopKali} disabled={stopping}>
+                {stopping ? '...' : '⏹ Durdur'}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -10,13 +86,11 @@ const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const handleLogout = () => { logout(); navigate('/login'); };
-
   const isActive = (path) => location.pathname.startsWith(path);
 
   return (
     <nav className="navbar">
       <div className="navbar-inner">
-        {/* Brand */}
         <Link to="/" className="navbar-brand">
           <span className="brand-icon">◈</span>
           <span className="brand-text">DEDEKTIF</span>
@@ -25,7 +99,6 @@ const Navbar = () => {
 
         {user && (
           <>
-            {/* Nav links */}
             <div className="navbar-links">
               <Link to="/cases" className={`nav-link ${isActive('/cases') ? 'active' : ''}`}>
                 <span className="nav-link-prefix">01</span> VAKALAR
@@ -40,19 +113,19 @@ const Navbar = () => {
               )}
             </div>
 
-            {/* User info */}
             <div className="navbar-user">
+              {/* Kali widget */}
+              <KaliWidget />
+
               <div className="user-score">
-                <span className="score-label">INTEL</span>
+                <span className="score-label">PUAN</span>
                 <span className="score-value">{user.totalScore?.toLocaleString() || 0}</span>
               </div>
               <div className="user-badge">
                 <span className="user-avatar">{user.username?.charAt(0).toUpperCase()}</span>
                 <span className="user-name">{user.username?.toUpperCase()}</span>
               </div>
-              <button onClick={handleLogout} className="logout-btn">
-                ⏻
-              </button>
+              <button onClick={handleLogout} className="logout-btn">⏻</button>
             </div>
           </>
         )}

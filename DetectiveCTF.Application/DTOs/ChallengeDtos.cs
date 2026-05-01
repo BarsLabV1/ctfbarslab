@@ -14,7 +14,9 @@ public record ChallengeListItemDto(
     bool IsUnlocked,
     bool IsSolved,
     int Attempts,
-    string? RequiredChallengeTitle
+    string? RequiredChallengeTitle,
+    int PosX = 0,
+    int PosY = 0
 );
 
 public record EvidenceDto(
