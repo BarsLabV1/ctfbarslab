@@ -23,9 +23,8 @@ Açılış:
 - **Frontend:** http://localhost:3000
 - **Backend API:** http://localhost:5001
 
-### Varsayılan Admin Hesabı
-- Kullanıcı adı: `admin`
-- Şifre: `Admin123!`
+### İlk Kullanım
+Kayıt ol sayfasından hesap oluştur. İlk kaydolan kullanıcıya admin yetkisi vermek için veritabanında `IsAdmin = 1` yapman gerekir.
 
 ---
 
