@@ -47,7 +47,8 @@ public class AdminChallengeService : IAdminChallengeService
          c.UnlockContent,
          c.RequiredChallengeId,
          c.PosX,
-         c.PosY
+         c.PosY,
+         c.ImageUrl
      ))
      .ToListAsync();
     }
@@ -74,6 +75,7 @@ public class AdminChallengeService : IAdminChallengeService
             UnlockContent = request.UnlockContent,
             PosX = request.PosX ?? 0,
             PosY = request.PosY ?? 0,
+            ImageUrl = request.ImageUrl,
         };
 
         _context.Challenges.Add(challenge);
@@ -106,6 +108,7 @@ public class AdminChallengeService : IAdminChallengeService
         challenge.UnlockContent = request.UnlockContent;
         challenge.PosX = request.PosX ?? challenge.PosX;
         challenge.PosY = request.PosY ?? challenge.PosY;
+        if (request.ImageUrl != null) challenge.ImageUrl = request.ImageUrl;
 
         await _context.SaveChangesAsync();
     }

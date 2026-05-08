@@ -403,8 +403,10 @@ const Play = () => {
   const [caseData,   setCaseData]   = useState(null);
   const [challenges, setChallenges] = useState([]);
   const [loading,    setLoading]    = useState(true);
-  const [boardTab,   setBoardTab]   = useState('detective'); // 'detective' | 'evidence'
+  const [boardTab,   setBoardTab]   = useState('detective');
   const [autoItems,  setAutoItems]  = useState([]);
+  const [boardScale, setBoardScale] = useState(0.85);
+  const [boardPan,   setBoardPan]   = useState({ x: 50, y: 80 });
   const hubRef = useRef(null);
 
   const fetchAll = useCallback(async () => {
@@ -514,6 +516,16 @@ const Play = () => {
             >
               📌 Delil Panosu
             </button>
+
+            {/* ── Zoom kontrolleri — tab bar sağı ── */}
+            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, padding: '0 12px' }}>
+              <button className="play-zoom-btn" onClick={() => setBoardScale(s => Math.min(2.0, s * 1.1))}>+</button>
+              <span style={{ fontFamily: 'monospace', fontSize: 11, color: '#c9975a', minWidth: 36, textAlign: 'center' }}>
+                {Math.round(boardScale * 100)}%
+              </span>
+              <button className="play-zoom-btn" onClick={() => setBoardScale(s => Math.max(0.3, s * 0.9))}>−</button>
+              <button className="play-zoom-btn" onClick={() => { setBoardScale(0.85); setBoardPan({ x: 50, y: 80 }); }}>⌂</button>
+            </div>
           </div>
 
           <div style={{ display: boardTab === 'detective' ? 'flex' : 'none', flex: 1, flexDirection: 'column' }}>
@@ -524,6 +536,10 @@ const Play = () => {
               unlockedSections={[]}
               onChallengesSolved={fetchAll}
               onUnlock={handleUnlock}
+              externalScale={boardScale}
+              externalPan={boardPan}
+              onScaleChange={setBoardScale}
+              onPanChange={setBoardPan}
             />
           </div>
 

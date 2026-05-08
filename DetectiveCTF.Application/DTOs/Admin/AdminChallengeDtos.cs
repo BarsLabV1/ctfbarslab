@@ -16,7 +16,8 @@ public record AdminChallengeRequest(
     string? Hints,
     string? UnlockContent,
     int? PosX = null,
-    int? PosY = null
+    int? PosY = null,
+    string? ImageUrl = null
 );
 
 public record AdminChallengeListDto(
@@ -37,5 +38,6 @@ public record AdminChallengeListDto(
     string? UnlockContent,
     int? RequiredChallengeId,
     int PosX = 0,
-    int PosY = 0
+    int PosY = 0,
+    string? ImageUrl = null
 );

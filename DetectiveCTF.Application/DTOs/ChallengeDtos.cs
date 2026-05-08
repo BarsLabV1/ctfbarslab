@@ -16,7 +16,8 @@ public record ChallengeListItemDto(
     int Attempts,
     string? RequiredChallengeTitle,
     int PosX = 0,
-    int PosY = 0
+    int PosY = 0,
+    string? ImageUrl = null
 );
 
 public record EvidenceDto(

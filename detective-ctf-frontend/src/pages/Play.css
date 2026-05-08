@@ -998,6 +998,20 @@
   background: rgba(245,197,24,0.04);
 }
 
+.play-zoom-btn {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(201,151,90,0.2);
+  color: #c9975a;
+  padding: 4px 10px;
+  border-radius: 5px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: monospace;
+  transition: background 0.15s;
+}
+.play-zoom-btn:hover { background: rgba(201,151,90,0.12); color: #e8c080; }
+
 /* VM butonları */
 .vm-start-btn {
   width: 100%;

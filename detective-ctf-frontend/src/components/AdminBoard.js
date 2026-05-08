@@ -22,9 +22,7 @@ const defaultQPos = (index) => ({
 });
 
 const getStringPath = (from, to) => {
-  const mx = (from.x + to.x) / 2;
-  const my = (from.y + to.y) / 2 - 40;
-  return `M ${from.x} ${from.y} Q ${mx} ${my} ${to.x} ${to.y}`;
+  return `M ${from.x} ${from.y} L ${to.x} ${to.y}`;
 };
 
 const cardCenter = (pos) => ({ x: pos.x + 95, y: pos.y - 2 });
@@ -57,7 +55,7 @@ const FileDropzone = ({ fileUrl, type, uploading, onFile, onClear }) => {
 };
 
 /* ─── QuestionModal ─── */
-const QuestionModal = ({ title, form, setForm, cases, questions, selCase, onSave, onClose }) => (
+const QuestionModal = ({ title, form, setForm, cases, questions, selCase, uploading, onFile, onSave, onClose }) => (
   <div className="adm-overlay" onClick={onClose}>
     <div className="adm-modal" style={{ width: 560, maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
       <div className="adm-modal-header"><h3>{title}</h3><button className="adm-modal-close" onClick={onClose}>✕</button></div>
@@ -80,6 +78,18 @@ const QuestionModal = ({ title, form, setForm, cases, questions, selCase, onSave
           <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Soru başlığı" />
           <label>Açıklama</label>
           <textarea rows={3} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Soru açıklaması" />
+
+          <div className="adm-section-divider">🖼️ Kart Fotoğrafı (opsiyonel)</div>
+          <div className="adm-ev-dropzone">
+            <FileDropzone
+              fileUrl={form.imageUrl}
+              type="photo"
+              uploading={uploading}
+              onFile={onFile}
+              onClear={() => setForm(f => ({ ...f, imageUrl: '' }))}
+            />
+          </div>
+
           <div className="adm-form-row">
             <div>
               <label>Kategori *</label>
@@ -221,9 +231,10 @@ const AdminBoard = ({ cases, questions, onQuestionsChanged }) => {
   const isPanning  = useRef(false);
   const panStart   = useRef({ x: 0, y: 0 });
   const dragging   = useRef(null);
+  const boardMoved = useRef(false);
 
   const blankCard = { type: 'note', title: '', content: '', fileUrl: '', externalUrl: '', dockerImage: '', posX: 400, posY: 300, rotation: 0, color: '#bacb9a', unlockedByChallenge: '' };
-  const blankQ    = { caseId: '', title: '', description: '', category: 'OSINT', order: 1, points: 100, flag: '', requiredChallengeId: '', hasVM: false, dockerImage: '' };
+  const blankQ    = { caseId: '', title: '', description: '', category: 'OSINT', order: 1, points: 100, flag: '', requiredChallengeId: '', hasVM: false, dockerImage: '', imageUrl: '' };
   const [cardForm, setCardForm] = useState(blankCard);
   const [qForm,    setQForm]    = useState(blankQ);
 
@@ -262,7 +273,7 @@ const AdminBoard = ({ cases, questions, onQuestionsChanged }) => {
     });
   }, [selCase, questions]); // eslint-disable-line
 
-  /* ── File upload ── */
+  /* ── File upload (kart için) ── */
   const uploadFile = async (file) => {
     if (!file) return;
     setUploading(true);
@@ -272,6 +283,20 @@ const AdminBoard = ({ cases, questions, onQuestionsChanged }) => {
       const res = await api.post('/admin/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
       setCardForm(f => ({ ...f, fileUrl: res.data.fileUrl }));
       showToast('Dosya yüklendi!', 'success');
+    } catch { showToast('Yükleme başarısız', 'error'); }
+    finally { setUploading(false); }
+  };
+
+  /* ── File upload (soru fotoğrafı için) ── */
+  const uploadQFile = async (file) => {
+    if (!file) return;
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await api.post('/admin/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      setQForm(f => ({ ...f, imageUrl: res.data.fileUrl }));
+      showToast('Fotoğraf yüklendi!', 'success');
     } catch { showToast('Yükleme başarısız', 'error'); }
     finally { setUploading(false); }
   };
@@ -336,6 +361,7 @@ const AdminBoard = ({ cases, questions, onQuestionsChanged }) => {
       category: qForm.category, order: parseInt(qForm.order) || 1, points: parseInt(qForm.points) || 100,
       flag: qForm.flag || '', requiredChallengeId: qForm.requiredChallengeId ? parseInt(qForm.requiredChallengeId) : null,
       hasVM: qForm.hasVM, dockerImage: qForm.dockerImage || null,
+      imageUrl: qForm.imageUrl || null,
     };
     try {
       if (editQModal) { await api.put('/admin/challenges/' + editQModal.id, body); showToast('Soru güncellendi', 'success'); setEditQModal(null); }
@@ -406,12 +432,13 @@ const AdminBoard = ({ cases, questions, onQuestionsChanged }) => {
   const onBoardMouseDown = (e) => {
     if (e.target.closest('.db-card') || e.target.closest('.adm-board-toolbar')) return;
     isPanning.current = true;
+    boardMoved.current = false;
     panStart.current = { x: e.clientX - pan.x, y: e.clientY - pan.y };
   };
 
   const startDragCard = useCallback((e, id) => {
     if (connectMode) return;
-    e.preventDefault(); e.stopPropagation();
+    e.stopPropagation();
     const vp = boardRef.current?.getBoundingClientRect();
     if (!vp) return;
     const card = cards.find(c => c.id === id);
@@ -424,7 +451,7 @@ const AdminBoard = ({ cases, questions, onQuestionsChanged }) => {
 
   const startDragQuestion = useCallback((e, id) => {
     if (connectMode) return;
-    e.preventDefault(); e.stopPropagation();
+    e.stopPropagation();
     const vp = boardRef.current?.getBoundingClientRect();
     if (!vp) return;
     const pos = questionPositions[id] || defaultQPos(0);
@@ -447,6 +474,7 @@ const AdminBoard = ({ cases, questions, onQuestionsChanged }) => {
       return;
     }
     if (!isPanning.current) return;
+    boardMoved.current = true;
     setPan({ x: e.clientX - panStart.current.x, y: e.clientY - panStart.current.y });
   }, [pan, scale]);
 
@@ -554,6 +582,7 @@ const AdminBoard = ({ cases, questions, onQuestionsChanged }) => {
         className="db-viewport"
         style={{ flex: 1, height: 'auto', cursor: connectMode ? 'crosshair' : undefined }}
         onMouseDown={onBoardMouseDown}
+        onClick={e => { if (!e.target.closest('.db-card') && !e.target.closest('.adm-board-toolbar') && !boardMoved.current) setSelItem(null); }}
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
         onMouseLeave={onMouseUp}
@@ -620,14 +649,13 @@ const AdminBoard = ({ cases, questions, onQuestionsChanged }) => {
                   zIndex: isSelected ? 20 : 3,
                 }}
                 onMouseDown={e => startDragCard(e, card.id)}
-                onClick={() => handleItemClick('card', card.id)}
-              >
+                onClick={e => { e.stopPropagation(); if (connectMode) handleItemClick('card', card.id); }}              >
                 <div className="db-pin" />
                 {card.unlockedByChallenge && <div style={{ position: 'absolute', top: 6, left: 6, fontSize: 11, opacity: 0.6 }}>🔒</div>}
                 <div className="db-admin-card-icon">{TYPE_ICONS[card.type] || '📁'}</div>
                 <div className="db-admin-card-title" style={{ color: isDark ? '#e2e8f0' : '#1a1a1a' }}>{card.title}</div>
                 {card.type === 'photo' && card.fileUrl && <img src={BASE + card.fileUrl} alt={card.title} className="db-admin-card-thumb" />}
-                {card.type === 'note' && card.content && <div className="db-admin-card-preview">{card.content.slice(0, 80)}</div>}
+                {card.type === 'note' && card.content && <div className="db-admin-card-preview">{card.content.slice(0, 200)}</div>}
                 {['video','audio','document','terminal','website'].includes(card.type) && <div className="db-admin-card-hint">Tıkla → Görüntüle</div>}
               </div>
             );
@@ -663,14 +691,17 @@ const AdminBoard = ({ cases, questions, onQuestionsChanged }) => {
                   transition: 'box-shadow 0.15s',
                 }}
                 onMouseDown={e => startDragQuestion(e, ch.id)}
-                onClick={() => handleItemClick('question', ch.id)}
-              >
+                onClick={e => { e.stopPropagation(); if (connectMode) handleItemClick('question', ch.id); }}              >
                 <div className="db-pin" />
                 <div style={{ position: 'absolute', top: 0, right: 0, background: '#5a3a00', color: '#f5e8d0', fontSize: 7, fontWeight: 900, padding: '3px 8px', letterSpacing: 1, fontFamily: '"Courier New", Courier, monospace', zIndex: 3 }}>{ch.category?.toUpperCase()}</div>
                 <div style={{ position: 'absolute', top: 4, left: 8, fontFamily: '"Courier New", Courier, monospace', fontSize: 10, fontWeight: 900, color: 'rgba(60,30,10,0.45)', zIndex: 3 }}>#{ch.order}</div>
                 <div style={{ width: '100%', height: '100%', background: catBg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, overflow: 'hidden', borderRadius: 1, position: 'relative' }}>
                   {ch.requiredChallengeId && <div style={{ position: 'absolute', top: 4, right: 4, fontSize: 14, opacity: 0.7, zIndex: 5 }}>🔒</div>}
-                  <span style={{ fontSize: 56, lineHeight: 1 }}>{icon}</span>
+                  {ch.imageUrl ? (
+                    <img src={BASE + ch.imageUrl} alt={ch.title} style={{ width:'100%', height:'100%', objectFit:'cover', position:'absolute', inset:0, opacity:0.85 }} />
+                  ) : (
+                    <span style={{ fontSize: 56, lineHeight: 1 }}>{icon}</span>
+                  )}
                 </div>
                 <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 36, background: '#f0ece0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderTop: '1px solid rgba(0,0,0,0.08)', zIndex: 4, padding: '0 6px' }}>
                   <span style={{ fontFamily: '"Courier New", Courier, monospace', fontSize: 9, fontWeight: 900, color: '#2a1a08', textAlign: 'center', textTransform: 'uppercase', letterSpacing: 0.5, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>{ch.title}</span>
@@ -687,7 +718,7 @@ const AdminBoard = ({ cases, questions, onQuestionsChanged }) => {
         <BoardCardModal title={editCardModal ? 'Kartı Düzenle' : 'Yeni Kart Ekle'} form={cardForm} setForm={setCardForm} cases={cases} questions={questions} selCase={selCase} uploading={uploading} onFile={uploadFile} onSave={saveCard} onClose={() => { setAddCardModal(false); setEditCardModal(null); setCardForm(blankCard); }} />
       )}
       {(addQModal || editQModal) && (
-        <QuestionModal title={editQModal ? 'Soruyu Düzenle' : 'Yeni Soru Ekle'} form={qForm} setForm={setQForm} cases={cases} questions={questions} selCase={selCase} onSave={saveQuestion} onClose={() => { setAddQModal(false); setEditQModal(null); setQForm(blankQ); }} />
+        <QuestionModal title={editQModal ? 'Soruyu Düzenle' : 'Yeni Soru Ekle'} form={qForm} setForm={setQForm} cases={cases} questions={questions} selCase={selCase} uploading={uploading} onFile={uploadQFile} onSave={saveQuestion} onClose={() => { setAddQModal(false); setEditQModal(null); setQForm(blankQ); }} />
       )}
 
       {/* ── Olay Yeri Raporu ── */}

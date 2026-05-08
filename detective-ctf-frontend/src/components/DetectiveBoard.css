@@ -11,6 +11,10 @@
   position: relative;
   background: #2a1508;
 }
+/* flex child olarak kullanılınca height:auto ile override edilebilir */
+.db-viewport[style*="flex"] {
+  height: auto;
+}
 .db-viewport:active { cursor: grabbing; }
 
 /* ── Board (cork board) ── */
@@ -767,13 +771,16 @@
 .db-admin-card {
   width: 180px;
   min-height: 140px;
-  padding: 28px 14px 14px;
+  max-height: 220px;
+  padding: 28px 12px 12px;
   border-radius: 2px;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 6px;
+  gap: 4px;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .db-admin-note    { background: #bacb9a; }
@@ -784,15 +791,23 @@
 .db-admin-website { background: #0d1117; border: 2px solid #00d4ff; }
 .db-admin-audio   { background: #1a0a2e; border: 2px solid #a855f7; }
 
-.db-admin-card-icon { font-size: 28px; }
+.db-admin-card-icon { font-size: 20px; flex-shrink: 0; }
 
 .db-admin-card-title {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: #1a1a1a;
   line-height: 1.3;
+  word-break: break-word;
+  text-align: center;
+  width: 100%;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  flex-shrink: 0;
 }
 
 .db-admin-terminal .db-admin-card-title,
@@ -804,9 +819,16 @@
 
 .db-admin-card-preview {
   font-size: 9px;
-  color: #555;
-  line-height: 1.4;
+  color: #444;
+  line-height: 1.5;
   font-family: 'Courier New', monospace;
+  width: 100%;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  word-break: break-word;
+  text-align: left;
 }
 
 .db-admin-card-thumb {
@@ -815,6 +837,7 @@
   object-fit: cover;
   border-radius: 2px;
   filter: sepia(0.2) contrast(1.1);
+  flex-shrink: 0;
 }
 
 .db-admin-card-hint {
@@ -825,6 +848,7 @@
   padding-top: 4px;
   width: 100%;
   text-align: center;
+  flex-shrink: 0;
 }
 
 /* ── VM Panel ── */

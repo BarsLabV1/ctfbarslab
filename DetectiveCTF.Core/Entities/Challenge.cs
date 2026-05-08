@@ -30,6 +30,9 @@ public class Challenge
     // Pano pozisyonu (admin panelden ayarlanır)
     public int PosX { get; set; } = 0;
     public int PosY { get; set; } = 0;
+    
+    // Kart kapak fotoğrafı
+    public string? ImageUrl { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     

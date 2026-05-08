@@ -240,14 +240,35 @@ const cardCenter = (pos) => ({
 /* ══════════════════════════════════════════
    Ana Component
 ══════════════════════════════════════════ */
-const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], unlockedSections = [] }) => {
+const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], unlockedSections = [], externalScale, externalPan, onScaleChange, onPanChange }) => {
   const { showToast } = useToast();
   const viewportRef = useRef(null);
   const hubRef      = useRef(null);
+  const BASE = (process.env.REACT_APP_API_URL || 'http://localhost:5001/api').replace('/api', '');
 
-  // Pan/Zoom state
-  const [pan,   setPan]   = useState({ x: 50, y: 80 });
-  const [scale, setScale] = useState(0.85);
+  // Pan/Zoom state — external prop varsa onu kullan
+  const [pan,   setPan]   = useState(externalPan   || { x: 50, y: 80 });
+  const [scale, setScale] = useState(externalScale || 0.85);
+
+  useEffect(() => { if (externalScale !== undefined) setScale(externalScale); }, [externalScale]);
+  useEffect(() => { if (externalPan   !== undefined) setPan(externalPan);     }, [externalPan]);
+
+  const handleSetScale = useCallback((fn) => {
+    setScale(prev => {
+      const next = typeof fn === 'function' ? fn(prev) : fn;
+      if (onScaleChange) onScaleChange(next);
+      return next;
+    });
+  }, [onScaleChange]);
+
+  const handleSetPan = useCallback((fn) => {
+    setPan(prev => {
+      const next = typeof fn === 'function' ? fn(prev) : fn;
+      if (onPanChange) onPanChange(next);
+      return next;
+    });
+  }, [onPanChange]);
+
   const isPanning = useRef(false);
   const panStart  = useRef({ x: 0, y: 0 });
 
@@ -387,7 +408,7 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
       return;
     }
     if (!isPanning.current) return;
-    setPan({ x: e.clientX - panStart.current.x, y: e.clientY - panStart.current.y });
+    handleSetPan({ x: e.clientX - panStart.current.x, y: e.clientY - panStart.current.y });
   }, [pan, scale]);
 
   const onMouseUp = () => {
@@ -398,8 +419,7 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
     isPanning.current = false;
   };
 
-  const onWheel = (e) => {
-    // Popup açıksa scroll'u engelle
+  const onWheel = useCallback((e) => {
     if (viewCard || viewReport || showAddNote) return;
     e.preventDefault();
     if (e.ctrlKey || e.metaKey) {
@@ -408,12 +428,19 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
       const ys = (e.clientY - vp.top  - pan.y) / scale;
       const delta = e.deltaY > 0 ? 0.95 : 1.05;
       const newScale = Math.min(Math.max(0.3, scale * delta), 2.0);
-      setPan({ x: e.clientX - vp.left - xs * newScale, y: e.clientY - vp.top - ys * newScale });
-      setScale(newScale);
+      handleSetPan({ x: e.clientX - vp.left - xs * newScale, y: e.clientY - vp.top - ys * newScale });
+      handleSetScale(newScale);
     } else {
-      setPan(prev => ({ x: prev.x - e.deltaX, y: prev.y - e.deltaY }));
+      handleSetPan(prev => ({ x: prev.x - e.deltaX, y: prev.y - e.deltaY }));
     }
-  };
+  }, [pan, scale, viewCard, viewReport, showAddNote, handleSetPan, handleSetScale]);
+
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (!el) return;
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [onWheel]);
 
   /* ── Kart tıklama: detay yükle + popup aç ── */
   const openCard = useCallback(async (ch) => {
@@ -478,11 +505,7 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
 
   /* ── İp çizgisi hesapla ── */
   const getStringPath = (from, to) => {
-    const a = from;
-    const b = to;
-    const mx = (a.x + b.x) / 2;
-    const my = (a.y + b.y) / 2 - 30;
-    return `M ${a.x} ${a.y} Q ${mx} ${my} ${b.x} ${b.y}`;
+    return `M ${from.x} ${from.y} L ${to.x} ${to.y}`;
   };
 
   /* ── Senaryo kartı merkezi ── */
@@ -499,7 +522,6 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
       onMouseLeave={onMouseUp}
-      onWheel={onWheel}
     >
       <div
         className="db-board"
@@ -738,8 +760,11 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
                   </div>
                 )}
 
-                {/* Büyük ikon */}
-                <span style={{fontSize:56, lineHeight:1, filter: solved ? 'grayscale(30%)' : 'none'}}>{icon}</span>
+                {/* Büyük ikon veya fotoğraf */}
+                {ch.imageUrl
+                  ? <img src={BASE + ch.imageUrl} alt={ch.title} style={{width:'100%',height:'100%',objectFit:'cover',position:'absolute',inset:0,opacity:0.9,zIndex:2}}/>
+                  : <span style={{fontSize:56, lineHeight:1, filter: solved ? 'grayscale(30%)' : 'none'}}>{icon}</span>
+                }
               </div>
 
               {/* Alt beyaz şerit */}
@@ -931,17 +956,6 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
       </div>
 
       {/* ── Açık Soru Paneli (sağ kenar) ── */}
-      {/* ── Üst araç çubuğu ── */}
-      <div className="db-toolbar">
-        <button className="db-tool-btn" onClick={() => setShowAddNote(true)}>+ Not</button>
-        <div className="db-zoom-info">{Math.round(scale * 100)}%</div>
-        <button className="db-tool-btn" onClick={() => setScale(s => Math.min(2.0, s * 1.1))}>+</button>
-        <button className="db-tool-btn" onClick={() => setScale(s => Math.max(0.3, s * 0.9))}>−</button>
-        <button className="db-tool-btn" onClick={() => { setPan({ x: 50, y: 80 }); setScale(0.85); }}>
-          ⌂
-        </button>
-      </div>
-
       {/* ── VM Panel (sağ üst) ── */}
       {challenges.some(c => c.hasVM) && (
         <VMPanel challenges={challenges} caseId={caseId} onRefresh={() => {

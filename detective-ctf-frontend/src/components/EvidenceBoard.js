@@ -1,100 +1,98 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+﻿import React, { useState, useRef, useCallback, useEffect } from 'react';
 import * as signalR from '@microsoft/signalr';
 import CrimeSceneReport from './CrimeSceneReport';
-import './EvidenceBoard.css';
+import './DetectiveBoard.css';
 
-const NOTE_COLORS    = ['#fef9e7','#e8f5e9','#fff3e0','#fce4ec','#e3f2fd','#f3e5f5'];
-const NOTE_ROTATIONS = [-3, 2, -2, 3, -1, 1];
 const HUB_URL = (process.env.REACT_APP_API_URL || 'http://localhost:5001/api')
   .replace('/api', '/hubs/board');
+
+const NOTE_COLORS    = ['#fef9e7','#e8f5e9','#fff3e0','#fce4ec','#e3f2fd','#f3e5f5','#bacb9a'];
+const NOTE_ROTATIONS = [-3, 2, -2, 3, -1, 1, -1.5];
 
 let nextId = Date.now();
 const uid  = () => String(++nextId);
 
-/* ══════════════════════════════════════════ */
+const getStringPath = (from, to) => {
+  return `M ${from.x} ${from.y} L ${to.x} ${to.y}`;
+};
+
 const EvidenceBoard = ({ caseId, caseData, clues = [], autoItems = [], onUnlock, processedIds }) => {
-  const boardRef   = useRef(null);
-  const hubRef     = useRef(null);
-  const isSyncing  = useRef(false);
+  const boardRef  = useRef(null);
+  const hubRef    = useRef(null);
+  const isSyncing = useRef(false);
   const localProcessedIds = useRef(new Set());
-  const processedAutoIds = processedIds || localProcessedIds;
+  const processedAutoIds  = processedIds || localProcessedIds;
   const initialNotesAdded = useRef(false);
 
-  const [connected, setConnected] = useState(false);
-  const [notes,     setNotes]     = useState(() =>
+  const btnStyle = {
+    background:'rgba(0,0,0,0.15)', border:'none', borderRadius:4,
+    cursor:'pointer', fontSize:12, padding:'2px 5px', color:'#333',
+  };
+
+  const [pan,   setPan]   = useState({ x: 50, y: 80 });
+  const [scale, setScale] = useState(0.85);
+  const isPanning = useRef(false);
+  const panStart  = useRef({ x: 0, y: 0 });
+
+  const [connected,       setConnected]       = useState(false);
+  const [notes,           setNotes]           = useState(() =>
     clues.map((c, i) => ({
-      id: String(c.id), x: 60 + (i%4)*220, y: 60 + Math.floor(i/4)*200,
+      id: String(c.id), x: 200 + (i%4)*260, y: 200 + Math.floor(i/4)*220,
       title: c.title || 'İpucu', text: c.content || c.description || '',
       color: NOTE_COLORS[i % NOTE_COLORS.length],
       rotation: NOTE_ROTATIONS[i % NOTE_ROTATIONS.length],
     }))
   );
-  const [strings,  setStrings]  = useState([]);
-  const [suspects, setSuspects] = useState([]);
-  const [viewNote, setViewNote] = useState(null); // popup için
-  const [viewSuspect, setViewSuspect] = useState(null);
-  const [viewReport, setViewReport] = useState(false);
-  const [reportPos, setReportPos] = useState({ x: 520, y: 40 });
-  const REPORT_ID = `report_${caseId}`;
-
-  const [dragging,        setDragging]        = useState(null);
-  const [connecting,      setConnecting]      = useState(null);
-  const [editNote,        setEditNote]        = useState(null);
-  const [editSuspect,     setEditSuspect]     = useState(null);
+  const [strings,         setStrings]         = useState([]);
+  const [suspects,        setSuspects]        = useState([]);
+  const [viewReport,      setViewReport]      = useState(false);
   const [showAddNote,     setShowAddNote]     = useState(false);
   const [showAddSuspect,  setShowAddSuspect]  = useState(false);
   const [newNote,         setNewNote]         = useState({ title:'', text:'' });
   const [newSuspect,      setNewSuspect]      = useState({ name:'', role:'', motive:'' });
+  const [viewCard,        setViewCard]        = useState(null);
+  const [connecting,      setConnecting]      = useState(null);
 
-  /* ── Auto items from solved questions ── */
+  /* always-current refs for use in callbacks */
+  const notesRef   = useRef(notes);
+  const stringsRef = useRef(strings);
+  const suspectsRef= useRef(suspects);
+  useEffect(() => { notesRef.current   = notes;   }, [notes]);
+  useEffect(() => { stringsRef.current = strings; }, [strings]);
+  useEffect(() => { suspectsRef.current= suspects;}, [suspects]);
+
+  const dragging   = useRef(null);
+  const wasDragged = useRef(false);
+
+  /* ── broadcast ── */
+  const broadcast = useCallback((n, st, su) => {
+    if (isSyncing.current || !hubRef.current || !caseId) return;
+    hubRef.current.invoke('UpdateBoard', caseId, JSON.stringify({ notes: n, strings: st, suspects: su })).catch(() => {});
+  }, [caseId]);
+
+  /* ── Auto items ── */
   useEffect(() => {
     if (!autoItems || autoItems.length === 0) return;
     const lastItem = autoItems[autoItems.length - 1];
-
-    // Zaten işlendiyse tekrar ekleme
     if (processedAutoIds.current.has(lastItem.id)) return;
     processedAutoIds.current.add(lastItem.id);
-
     if (lastItem.type === 'note') {
-      const i = notes.length % NOTE_COLORS.length;
-      const newAutoNote = {
-        id: uid(),
-        _auto: true,
-        x: 80 + Math.random() * 300,
-        y: 80 + Math.random() * 200,
-        title: lastItem.title || 'Yeni Bulgu',
-        text: lastItem.text || '',
-        color: NOTE_COLORS[i],
-        rotation: NOTE_ROTATIONS[i],
-      };
-      setNotes(prev => {
-        const updated = [...prev, newAutoNote];
-        setTimeout(() => broadcast(updated, strings, suspects), 200);
-        return updated;
-      });
+      const i = notesRef.current.length % NOTE_COLORS.length;
+      const n = { id: uid(), _auto: true, x: 300+Math.random()*400, y: 200+Math.random()*300,
+        title: lastItem.title||'Yeni Bulgu', text: lastItem.text||'',
+        color: NOTE_COLORS[i], rotation: NOTE_ROTATIONS[i] };
+      setNotes(prev => { const u=[...prev,n]; broadcast(u,stringsRef.current,suspectsRef.current); return u; });
     } else if (lastItem.type === 'suspect') {
-      const newAutoSuspect = {
-        id: uid(),
-        _auto: true,
-        x: 500 + Math.random() * 150,
-        y: 60 + Math.random() * 200,
-        name: lastItem.name || 'Bilinmiyor',
-        role: lastItem.role || '',
-        motive: lastItem.motive || '',
-      };
-      setSuspects(prev => {
-        const updated = [...prev, newAutoSuspect];
-        setTimeout(() => broadcast(notes, strings, updated), 200);
-        return updated;
-      });
+      const s = { id: uid(), _auto: true, x: 600+Math.random()*200, y: 200+Math.random()*300,
+        name: lastItem.name||'Bilinmiyor', role: lastItem.role||'', motive: lastItem.motive||'' };
+      setSuspects(prev => { const u=[...prev,s]; broadcast(notesRef.current,stringsRef.current,u); return u; });
     }
   }, [autoItems]); // eslint-disable-line
 
-  /* ── SignalR connect ── */
+  /* ── SignalR ── */
   useEffect(() => {
     if (!caseId) return;
     const token = localStorage.getItem('token');
-
     const hub = new signalR.HubConnectionBuilder()
       .withUrl(`${HUB_URL}?access_token=${token}`)
       .withAutomaticReconnect()
@@ -104,396 +102,374 @@ const EvidenceBoard = ({ caseId, caseData, clues = [], autoItems = [], onUnlock,
     hub.on('BoardLoaded', (json) => {
       try {
         const state = JSON.parse(json);
-        if (state.notes)    setNotes(prev => {
-          // autoItems'dan gelen notları koru, DB'dekilerle merge et
-          const dbIds = new Set((state.notes || []).map(n => n.id));
-          const autoOnly = prev.filter(n => !dbIds.has(n.id) && n._auto);
-          return [...(state.notes || []), ...autoOnly];
-        });
+        if (state.notes)    setNotes(prev => { const dbIds=new Set((state.notes||[]).map(n=>n.id)); return [...(state.notes||[]),...prev.filter(n=>!dbIds.has(n.id)&&n._auto)]; });
         if (state.strings)  setStrings(state.strings);
-        if (state.suspects) setSuspects(prev => {
-          const dbIds = new Set((state.suspects || []).map(s => s.id));
-          const autoOnly = prev.filter(s => !dbIds.has(s.id) && s._auto);
-          return [...(state.suspects || []), ...autoOnly];
-        });
+        if (state.suspects) setSuspects(prev => { const dbIds=new Set((state.suspects||[]).map(s=>s.id)); return [...(state.suspects||[]),...prev.filter(s=>!dbIds.has(s.id)&&s._auto)]; });
       } catch {}
-
-      // Başlangıç notlarını ekle (sadece bir kez)
       if (!initialNotesAdded.current && caseData) {
         initialNotesAdded.current = true;
         const startNotes = [
-          { id: `init_case_${caseId}`, _auto: true, x: 40, y: 40,
-            title: '📋 ' + caseData.title,
-            text: caseData.story || caseData.description || '',
-            color: '#fef9e7', rotation: -1 },
-          { id: `init_report_${caseId}`, _auto: true, x: 290, y: 55,
-            title: '📄 Olay Yeri Raporu',
-            text: `Zorluk: ${caseData.difficulty}/5\nToplam Puan: ${caseData.totalPoints}\nSoru Sayısı: ${caseData.challengeCount || 0}\n\nSorular çözüldükçe yeni belgeler açılacak.`,
-            color: '#e3f2fd', rotation: 2 },
+          { id:`init_case_${caseId}`, _auto:true, x:200, y:200, title:'📋 '+caseData.title, text:caseData.story||caseData.description||'', color:'#fef9e7', rotation:-1 },
+          { id:`init_report_${caseId}`, _auto:true, x:500, y:220, title:'📄 Olay Yeri Raporu', text:`Zorluk: ${caseData.difficulty}/5\nToplam Puan: ${caseData.totalPoints}`, color:'#e3f2fd', rotation:2 },
         ];
-        setNotes(prev => {
-          const existIds = new Set(prev.map(n => n.id));
-          const toAdd = startNotes.filter(n => !existIds.has(n.id));
-          if (toAdd.length === 0) return prev;
-          return [...prev, ...toAdd];
-        });
+        setNotes(prev => { const existIds=new Set(prev.map(n=>n.id)); const toAdd=startNotes.filter(n=>!existIds.has(n.id)); return toAdd.length===0?prev:[...prev,...toAdd]; });
       }
     });
 
     hub.on('BoardUpdated', (json) => {
       isSyncing.current = true;
-      try {
-        const state = JSON.parse(json);
-        if (state.notes)    setNotes(state.notes);
-        if (state.strings)  setStrings(state.strings);
-        if (state.suspects) setSuspects(state.suspects);
-      } catch {}
-      setTimeout(() => { isSyncing.current = false; }, 50);
+      try { const s=JSON.parse(json); if(s.notes) setNotes(s.notes); if(s.strings) setStrings(s.strings); if(s.suspects) setSuspects(s.suspects); } catch {}
+      setTimeout(() => { isSyncing.current=false; }, 50);
     });
 
-    hub.on('ChallengeUnlocked', (json) => {
-      // Takım üyesi flag çözdü — onUnlock callback'ini tetikle
-      try {
-        const content = JSON.parse(json);
-        if (onUnlock) onUnlock(content);
-      } catch {}
-    });
-
-    hub.start()
-      .then(() => { hub.invoke('JoinBoard', caseId); setConnected(true); })
-      .catch(e => console.warn('SignalR bağlantı hatası:', e));
-
+    hub.on('ChallengeUnlocked', (json) => { try { const c=JSON.parse(json); if(onUnlock) onUnlock(c); } catch {} });
+    hub.start().then(() => { hub.invoke('JoinBoard', caseId); setConnected(true); }).catch(e => console.warn('SignalR:',e));
     hubRef.current = hub;
-    return () => { hub.stop(); };
-  }, [caseId]);
+    return () => hub.stop();
+  }, [caseId]); // eslint-disable-line
 
-  /* ── broadcast helper ── */
-  const broadcast = useCallback((n, st, su) => {
-    if (isSyncing.current || !hubRef.current || !caseId) return;
-    const json = JSON.stringify({ notes: n, strings: st, suspects: su });
-    hubRef.current.invoke('UpdateBoard', caseId, json).catch(() => {});
-  }, [caseId]);
-
-  /* ── drag ── */
+  /* ── Drag ── */
   const startDrag = useCallback((e, id, type) => {
-    e.preventDefault();
-    const board = boardRef.current.getBoundingClientRect();
-    if (type === 'report') {
-      setDragging({ id, type: 'report', ox: e.clientX - board.left - reportPos.x, oy: e.clientY - board.top - reportPos.y });
-      return;
-    }
-    const item  = type === 'note'
-      ? notes.find(n => n.id === id)
-      : suspects.find(s => s.id === id);
+    e.preventDefault(); e.stopPropagation();
+    const vp = boardRef.current?.getBoundingClientRect();
+    if (!vp) return;
+    const bx = (e.clientX - vp.left - pan.x) / scale;
+    const by = (e.clientY - vp.top  - pan.y) / scale;
+    const arr = type === 'note' ? notesRef.current : suspectsRef.current;
+    const item = arr.find(x => x.id === id);
     if (!item) return;
-    setDragging({ id, type, ox: e.clientX - board.left - item.x, oy: e.clientY - board.top - item.y });
-  }, [notes, suspects, reportPos]);
+    dragging.current = { id, type, ox: bx - item.x, oy: by - item.y };
+    wasDragged.current = false;
+  }, [pan, scale]);
 
   const onMouseMove = useCallback((e) => {
-    if (!dragging) return;
-    const board = boardRef.current.getBoundingClientRect();
-    const x = e.clientX - board.left - dragging.ox;
-    const y = e.clientY - board.top  - dragging.oy;
-    if (dragging.type === 'report') {
-      setReportPos({ x, y });
-    } else if (dragging.type === 'note') {
-      setNotes(ns => { const u = ns.map(n => n.id === dragging.id ? {...n,x,y} : n); return u; });
-    } else {
-      setSuspects(ss => { const u = ss.map(s => s.id === dragging.id ? {...s,x,y} : s); return u; });
+    if (dragging.current) {
+      const vp = boardRef.current?.getBoundingClientRect();
+      if (!vp) return;
+      const bx = (e.clientX - vp.left - pan.x) / scale;
+      const by = (e.clientY - vp.top  - pan.y) / scale;
+      const nx = bx - dragging.current.ox;
+      const ny = by - dragging.current.oy;
+      wasDragged.current = true;
+      if (dragging.current.type === 'note')
+        setNotes(ns => ns.map(n => n.id === dragging.current?.id ? {...n,x:nx,y:ny} : n));
+      else
+        setSuspects(ss => ss.map(s => s.id === dragging.current?.id ? {...s,x:nx,y:ny} : s));
+      return;
     }
-  }, [dragging]);
+    if (!isPanning.current) return;
+    setPan({ x: e.clientX - panStart.current.x, y: e.clientY - panStart.current.y });
+  }, [pan, scale]);
 
-  const stopDrag = useCallback(() => {
-    if (!dragging) return;
-    setDragging(null);
-    // broadcast after drag ends
-    setNotes(n => { setStrings(st => { setSuspects(su => { broadcast(n,st,su); return su; }); return st; }); return n; });
-  }, [dragging, broadcast]);
+  const onMouseUp = useCallback(() => {
+    if (dragging.current) {
+      dragging.current = null;
+      // refs her zaman güncel — güvenli broadcast
+      broadcast(notesRef.current, stringsRef.current, suspectsRef.current);
+    }
+    isPanning.current = false;
+  }, [broadcast]);
 
-  /* ── connect notes ── */
-  const handleItemClick = (e, id) => {
-    if (dragging) return;
+  const onBoardMouseDown = (e) => {
+    if (e.target.closest('.db-card') || e.target.closest('.eb-toolbar-new')) return;
+    isPanning.current = true;
+    panStart.current = { x: e.clientX - pan.x, y: e.clientY - pan.y };
+  };
+
+  /* ── Wheel ── */
+  const onWheel = useCallback((e) => {
+    e.preventDefault();
+    const vp = boardRef.current.getBoundingClientRect();
+    if (e.ctrlKey || e.metaKey) {
+      const xs = (e.clientX - vp.left - pan.x) / scale;
+      const ys = (e.clientY - vp.top  - pan.y) / scale;
+      const delta = e.deltaY > 0 ? 0.95 : 1.05;
+      const ns = Math.min(Math.max(0.3, scale * delta), 2.0);
+      setPan({ x: e.clientX - vp.left - xs * ns, y: e.clientY - vp.top - ys * ns });
+      setScale(ns);
+    } else {
+      setPan(prev => ({ x: prev.x - e.deltaX, y: prev.y - e.deltaY }));
+    }
+  }, [pan, scale]);
+
+  useEffect(() => {
+    const el = boardRef.current;
+    if (!el) return;
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [onWheel]);
+
+  /* ── Connect ── */
+  const handleItemClick = useCallback((id) => {
+    if (wasDragged.current) { wasDragged.current = false; return; }
     if (connecting === null) {
       setConnecting(id);
     } else if (connecting !== id) {
-      const exists = strings.some(s =>
-        (s.fromId===connecting && s.toId===id) || (s.fromId===id && s.toId===connecting));
+      const cur = stringsRef.current;
+      const exists = cur.some(s => (s.fromId===connecting&&s.toId===id)||(s.fromId===id&&s.toId===connecting));
       if (!exists) {
-        const newStrings = [...strings, { id: uid(), fromId: connecting, toId: id }];
-        setStrings(newStrings);
-        setNotes(n => { setSuspects(su => { broadcast(n, newStrings, su); return su; }); return n; });
+        const ns = [...cur, { id: uid(), fromId: connecting, toId: id }];
+        setStrings(ns);
+        broadcast(notesRef.current, ns, suspectsRef.current);
       }
       setConnecting(null);
-    } else {
-      setConnecting(null);
-    }
-  };
+    } else { setConnecting(null); }
+  }, [connecting, broadcast]);
 
-  const removeString = (id) => {
-    const newStrings = strings.filter(s => s.id !== id);
-    setStrings(newStrings);
-    broadcast(notes, newStrings, suspects);
-  };
+  const removeString = useCallback((id) => {
+    const ns = stringsRef.current.filter(s => s.id !== id);
+    setStrings(ns);
+    broadcast(notesRef.current, ns, suspectsRef.current);
+  }, [broadcast]);
 
-  /* ── add / remove note ── */
+  /* ── Note CRUD ── */
   const addNote = () => {
     if (!newNote.title.trim()) return;
-    const i = notes.length % NOTE_COLORS.length;
-    const n = {
-      id: uid(), x: 80+Math.random()*300, y: 80+Math.random()*200,
+    const i = notesRef.current.length % NOTE_COLORS.length;
+    const n = { id: uid(), x: 300+Math.random()*500, y: 200+Math.random()*400,
       title: newNote.title, text: newNote.text,
-      color: NOTE_COLORS[i], rotation: NOTE_ROTATIONS[i],
-    };
-    const newNotes = [...notes, n];
-    setNotes(newNotes);
-    broadcast(newNotes, strings, suspects);
-    setNewNote({ title:'', text:'' });
-    setShowAddNote(false);
+      color: NOTE_COLORS[i], rotation: NOTE_ROTATIONS[i] };
+    const u = [...notesRef.current, n];
+    setNotes(u);
+    broadcast(u, stringsRef.current, suspectsRef.current);
+    setNewNote({ title:'', text:'' }); setShowAddNote(false);
   };
 
-  const removeNote = (id) => {
-    const newNotes   = notes.filter(n => n.id !== id);
-    const newStrings = strings.filter(s => s.fromId !== id && s.toId !== id);
-    setNotes(newNotes); setStrings(newStrings);
-    broadcast(newNotes, newStrings, suspects);
-  };
+  const removeNote = useCallback((id) => {
+    const nn = notesRef.current.filter(n => n.id !== id);
+    const ns = stringsRef.current.filter(s => s.fromId !== id && s.toId !== id);
+    setNotes(nn); setStrings(ns);
+    broadcast(nn, ns, suspectsRef.current);
+  }, [broadcast]);
 
-  const saveEditNote = () => {
-    const newNotes = notes.map(n => n.id === editNote.id ? {...n,...editNote} : n);
-    setNotes(newNotes);
-    broadcast(newNotes, strings, suspects);
-    setEditNote(null);
-  };
-
-  /* ── add / remove suspect ── */
+  /* ── Suspect CRUD ── */
   const addSuspect = () => {
     if (!newSuspect.name.trim()) return;
-    const s = { id: uid(), x: 500+Math.random()*200, y: 60+Math.random()*200, ...newSuspect };
-    const newSuspects = [...suspects, s];
-    setSuspects(newSuspects);
-    broadcast(notes, strings, newSuspects);
-    setNewSuspect({ name:'', role:'', motive:'' });
-    setShowAddSuspect(false);
+    const s = { id: uid(), x: 600+Math.random()*300, y: 200+Math.random()*400, ...newSuspect };
+    const u = [...suspectsRef.current, s];
+    setSuspects(u);
+    broadcast(notesRef.current, stringsRef.current, u);
+    setNewSuspect({ name:'', role:'', motive:'' }); setShowAddSuspect(false);
   };
 
-  const removeSuspect = (id) => {
-    const newSuspects = suspects.filter(s => s.id !== id);
-    const newStrings  = strings.filter(s => s.fromId !== id && s.toId !== id);
-    setSuspects(newSuspects); setStrings(newStrings);
-    broadcast(notes, newStrings, newSuspects);
-  };
+  const removeSuspect = useCallback((id) => {
+    const ns2 = suspectsRef.current.filter(s => s.id !== id);
+    const ns  = stringsRef.current.filter(s => s.fromId !== id && s.toId !== id);
+    setSuspects(ns2); setStrings(ns);
+    broadcast(notesRef.current, ns, ns2);
+  }, [broadcast]);
 
-  const saveEditSuspect = () => {
-    const newSuspects = suspects.map(s => s.id === editSuspect.id ? {...s,...editSuspect} : s);
-    setSuspects(newSuspects);
-    broadcast(notes, strings, newSuspects);
-    setEditSuspect(null);
-  };
+  /* ── Center for strings ── */
+  const getCenter = useCallback((id) => {
+    const n = notesRef.current.find(n => n.id === id);
+    if (n) return { x: n.x + 95, y: n.y - 2 };
+    const s = suspectsRef.current.find(s => s.id === id);
+    if (s) return { x: s.x + 80, y: s.y - 2 };
+    return null;
+  }, []);
 
-  /* ── center of item for string drawing ── */
-  const center = (id) => {
-    if (id === REPORT_ID) return { x: reportPos.x + 80, y: reportPos.y + 80 };
-    const n = notes.find(n => n.id === id) || suspects.find(s => s.id === id);
-    return n ? { x: n.x+95, y: n.y+65 } : { x:0, y:0 };
-  };
-
-  /* ══════════════════════════════════════════ */
+  /* ══════════════════════════════════════════ RENDER ══════════════════════════════════════════ */
   return (
-    <div className="eb-wrap">
-      <div className="eb-toolbar">
-        <div className="eb-toolbar-left">
-          <span className="eb-toolbar-title">Dedektif Panosu</span>
-          <span className={`eb-conn-dot ${connected ? 'online' : 'offline'}`}
-            title={connected ? 'Bağlı — takım eş zamanlı görüyor' : 'Bağlanıyor...'} />
-          <span className="eb-conn-label">{connected ? 'Canlı' : 'Bağlanıyor...'}</span>
-        </div>
-        <div className="eb-toolbar-actions">
-          {connecting !== null && (
-            <span className="eb-connecting-hint">
-              Bağlamak için başka bir öğeye tıkla
-              <button onClick={() => setConnecting(null)}>İptal</button>
-            </span>
-          )}
-          <button className="eb-btn" onClick={() => setShowAddNote(true)}>+ Not</button>
-          <button className="eb-btn" onClick={() => setShowAddSuspect(true)}>+ Şüpheli</button>
-        </div>
-      </div>
+    <div style={{ display:'flex', flexDirection:'column', flex:1, minHeight:0, overflow:'hidden' }}>
 
-      <div ref={boardRef} className="eb-board"
-        onMouseMove={onMouseMove} onMouseUp={stopDrag} onMouseLeave={stopDrag}>
-        <div className="eb-cork" />
-
-        <svg className="eb-svg">
-          {strings.map(s => {
-            const a = center(s.fromId), b = center(s.toId);
-            const mx = (a.x+b.x)/2, my = (a.y+b.y)/2;
-            return (
-              <g key={s.id}>
-                <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} className="eb-string"/>
-                <circle cx={mx} cy={my} r={8} className="eb-string-del" onClick={() => removeString(s.id)}/>
-                <text x={mx} y={my+4} className="eb-string-del-txt" onClick={() => removeString(s.id)}>✕</text>
-              </g>
-            );
-          })}
-        </svg>
-
-        {/* ── Özel: Olay Yeri Raporu kartı ── */}
+      {/* ── Toolbar ── */}
+      <div className="eb-toolbar-new" style={{
+        display:'flex', alignItems:'center', gap:10,
+        padding:'8px 14px', background:'#0f0c06',
+        borderBottom:'1px solid rgba(201,151,90,0.2)',
+        flexShrink:0, flexWrap:'wrap', zIndex:300,
+      }}>
+        <span style={{ fontFamily:'"Courier New",monospace', fontSize:13, fontWeight:900, color:'#c9975a', letterSpacing:1 }}>
+          📌 DELİL PANOSU
+        </span>
+        <span style={{ width:1, height:20, background:'rgba(201,151,90,0.2)' }}/>
+        <span style={{ fontSize:10, color: connected ? '#80c050' : '#888', fontFamily:'monospace' }}>
+          {connected ? '● Canlı' : '○ Bağlanıyor...'}
+        </span>
+        <button className="btn btn-primary btn-small" onClick={() => setShowAddNote(true)}>+ Not</button>
+        <button className="btn btn-secondary btn-small" onClick={() => setShowAddSuspect(true)}>+ Şüpheli</button>
+        {connecting !== null && (
+          <span style={{ fontSize:11, color:'#e74c3c', fontFamily:'monospace', background:'rgba(192,57,43,0.15)', padding:'4px 10px', borderRadius:4 }}>
+            🔗 Başka öğeye tıkla
+            <button onClick={() => setConnecting(null)} style={{ marginLeft:8, background:'none', border:'none', color:'#e74c3c', cursor:'pointer', fontSize:12 }}>İptal</button>
+          </span>
+        )}
         {caseData && (
-          <div
-            className={`eb-report-card ${connecting===REPORT_ID?'connecting':''} ${connecting!==null&&connecting!==REPORT_ID?'connectable':''}`}
-            style={{ left: reportPos.x, top: reportPos.y }}
-            onMouseDown={e => startDrag(e, REPORT_ID, 'report')}
-            onClick={e => handleItemClick(e, REPORT_ID)}
-            onDoubleClick={e => { e.stopPropagation(); setViewReport(true); }}
-          >
-            <div className="eb-report-pin"/>
-            <div className="eb-report-stamp">GİZLİ</div>
-            <div className="eb-report-badge">🛡️</div>
-            <div className="eb-report-title">OLAY YERİ<br/>İNCELEME RAPORU</div>
-            <div className="eb-report-case">Vaka #{String(caseData.id).padStart(4,'0')}</div>
-            <div className="eb-report-hint">Çift tıkla → Tam raporu gör</div>
-            <div className="eb-note-btns">
-              <button onClick={e=>{e.stopPropagation();setViewReport(true);}} title="Görüntüle">👁️</button>
-              <button onClick={e=>{e.stopPropagation();handleItemClick(e,REPORT_ID);}} title="İp bağla">🔗</button>
-            </div>
-          </div>
+          <button className="adm-tool-btn" onClick={() => setViewReport(true)} style={{ borderColor:'rgba(201,151,90,0.5)', color:'#c9975a' }}>
+            📄 Olay Yeri Raporu
+          </button>
         )}
-
-        {notes.map(n => (
-          <div key={n.id}
-            className={`eb-note ${connecting===n.id?'connecting':''} ${connecting!==null&&connecting!==n.id?'connectable':''}`}
-            style={{ left:n.x, top:n.y, background:n.color, transform:`rotate(${n.rotation}deg)` }}
-            onMouseDown={e => startDrag(e, n.id, 'note')}
-            onClick={e => handleItemClick(e, n.id)}
-            onDoubleClick={e => { e.stopPropagation(); setViewNote(n); }}>
-            <div className="eb-pin"/>
-            <div className="eb-note-title">{n.title}</div>
-            <div className="eb-note-text">{n.text}</div>
-            <div className="eb-note-btns">
-              <button onClick={e=>{e.stopPropagation();setViewNote(n);}} title="Görüntüle">👁️</button>
-              <button onClick={e=>{e.stopPropagation();setEditNote(n);}}>✏️</button>
-              <button onClick={e=>{e.stopPropagation();removeNote(n.id);}}>🗑</button>
-              <button onClick={e=>{e.stopPropagation();handleItemClick(e,n.id);}} title="İp bağla">🔗</button>
-            </div>
-          </div>
-        ))}
-
-        {suspects.map(s => (
-          <div key={s.id}
-            className={`eb-suspect ${connecting===s.id?'connecting':''} ${connecting!==null&&connecting!==s.id?'connectable':''}`}
-            style={{ left:s.x, top:s.y }}
-            onMouseDown={e => startDrag(e, s.id, 'suspect')}
-            onClick={e => handleItemClick(e, s.id)}
-            onDoubleClick={e => { e.stopPropagation(); setViewSuspect(s); }}>
-            <div className="eb-suspect-pin"/>
-            <div className="eb-suspect-avatar">{s.name.charAt(0).toUpperCase()}</div>
-            <div className="eb-suspect-name">{s.name}</div>
-            {s.role   && <div className="eb-suspect-role">{s.role}</div>}
-            {s.motive && <div className="eb-suspect-motive">Motif: {s.motive}</div>}
-            <div className="eb-note-btns">
-              <button onClick={e=>{e.stopPropagation();setViewSuspect(s);}} title="Görüntüle">👁️</button>
-              <button onClick={e=>{e.stopPropagation();setEditSuspect(s);}}>✏️</button>
-              <button onClick={e=>{e.stopPropagation();removeSuspect(s.id);}}>🗑</button>
-              <button onClick={e=>{e.stopPropagation();handleItemClick(e,s.id);}} title="İp bağla">🔗</button>
-            </div>
-          </div>
-        ))}
-
-        {notes.length===0 && suspects.length===0 && (
-          <div className="eb-empty">Panoya not veya şüpheli ekle, aralarına kırmızı ip çek</div>
-        )}
+        <div style={{ marginLeft:'auto', display:'flex', gap:6, alignItems:'center' }}>
+          <button className="adm-tool-btn" onClick={() => setScale(s => Math.min(2, s*1.1))}>+</button>
+          <span style={{ fontFamily:'monospace', fontSize:10, color:'#c9975a', padding:'4px 8px', minWidth:40, textAlign:'center' }}>{Math.round(scale*100)}%</span>
+          <button className="adm-tool-btn" onClick={() => setScale(s => Math.max(0.3, s*0.9))}>−</button>
+          <button className="adm-tool-btn" onClick={() => { setPan({x:50,y:80}); setScale(0.85); }}>⌂</button>
+        </div>
       </div>
 
-      {/* ── Modals ── */}
+      {/* ── Cork Board ── */}
+      <div
+        ref={boardRef}
+        className="db-viewport"
+        style={{ flex:1, height:'auto', minHeight:0 }}
+        onMouseDown={onBoardMouseDown}
+        onMouseMove={onMouseMove}
+        onMouseUp={onMouseUp}
+        onMouseLeave={onMouseUp}
+      >
+        <div className="db-board" style={{
+          transform: `translate(${pan.x}px,${pan.y}px) scale(${scale})`,
+          transformOrigin: '0 0',
+          backgroundImage: `url(${process.env.PUBLIC_URL}/pano-cercevesiz.png)`,
+          backgroundSize: '1024px 576px',
+          backgroundRepeat: 'repeat',
+        }}>
+
+          {/* SVG İpler */}
+          <svg className="db-svg" style={{ overflow:'visible' }}>
+            {strings.map(s => {
+              const from = getCenter(s.fromId);
+              const to   = getCenter(s.toId);
+              if (!from || !to) return null;
+              const mid = { x:(from.x+to.x)/2, y:(from.y+to.y)/2-20 };
+              return (
+                <g key={s.id}>
+                  <path d={getStringPath(from,to)} stroke="#c0392b" strokeWidth={2} fill="none" strokeLinecap="round" opacity={0.9}/>
+                  <circle cx={mid.x} cy={mid.y} r={8} fill="#c0392b" opacity={0.75} style={{ pointerEvents:'all', cursor:'pointer' }} onClick={() => removeString(s.id)}/>
+                  <text x={mid.x} y={mid.y+4} textAnchor="middle" fontSize={9} fill="white" style={{ pointerEvents:'none', userSelect:'none' }}>✕</text>
+                </g>
+              );
+            })}
+          </svg>
+
+          {/* Senaryo Kartı */}
+          {caseData && (
+            <div className="db-card db-scenario-card" style={{ left:120, top:180, transform:'rotate(-1.5deg)', position:'absolute', zIndex:2 }}>
+              <div className="db-pin db-pin-red"/>
+              <div className="db-card-stamp">GİZLİ</div>
+              <div style={{ fontFamily:'Courier New', fontSize:8, color:'rgba(0,0,0,0.4)', marginBottom:6, letterSpacing:1 }}>DOSYA #{String(caseData.id||1).padStart(4,'0')}</div>
+              <div className="db-scenario-title">{caseData.title}</div>
+              <div className="db-scenario-desc">{(caseData.story||caseData.description||'').slice(0,100)}...</div>
+              <div className="db-scenario-meta"><span>⭐ {caseData.totalPoints}</span></div>
+              <button className="db-report-btn" onClick={() => setViewReport(true)}>📄 Olay Yeri Raporu</button>
+            </div>
+          )}
+
+          {/* Not Kartları */}
+          {notes.map(n => (
+            <div key={n.id} className="db-card db-user-note"
+              style={{
+                left:n.x, top:n.y, transform:`rotate(${n.rotation||0}deg)`,
+                background: n.color||'#fef9e7',
+                cursor: connecting !== null ? 'crosshair' : 'grab',
+                outline: connecting === n.id ? '3px solid #f5c518' : undefined,
+                zIndex: connecting === n.id ? 20 : 3,
+                minWidth:180, minHeight:160, padding:'28px 16px 36px',
+              }}
+              onMouseDown={e => startDrag(e, n.id, 'note')}
+              onClick={() => handleItemClick(n.id)}
+            >
+              <div className="db-pin"/>
+              <div className="db-note-title">{n.title}</div>
+              <div className="db-note-text">{n.text}</div>
+              <div style={{ position:'absolute', bottom:6, right:8, display:'flex', gap:4 }}>
+                <button style={btnStyle} onClick={e=>{e.stopPropagation();setViewCard(n);}}>👁️</button>
+                <button style={btnStyle} onClick={e=>{e.stopPropagation();removeNote(n.id);}}>🗑</button>
+              </div>
+            </div>
+          ))}
+
+          {/* Şüpheli Kartları */}
+          {suspects.map(s => (
+            <div key={s.id} className="db-card db-suspect-card"
+              style={{
+                left:s.x, top:s.y, transform:'rotate(-1.5deg)',
+                cursor: connecting !== null ? 'crosshair' : 'grab',
+                outline: connecting === s.id ? '3px solid #f5c518' : undefined,
+                zIndex: connecting === s.id ? 20 : 3,
+              }}
+              onMouseDown={e => startDrag(e, s.id, 'suspect')}
+              onClick={() => handleItemClick(s.id)}
+            >
+              <div className="db-pin db-pin-red"/>
+              <div className="db-suspect-avatar">{s.name.charAt(0).toUpperCase()}</div>
+              <div className="db-suspect-name">{s.name}</div>
+              {s.role   && <div className="db-suspect-role">{s.role}</div>}
+              {s.motive && <div className="db-suspect-motive">⚠️ {s.motive}</div>}
+              <div style={{ position:'absolute', bottom:6, right:8, display:'flex', gap:4 }}>
+                <button style={btnStyle} onClick={e=>{e.stopPropagation();setViewCard({...s,_isSuspect:true});}}>��️</button>
+                <button style={btnStyle} onClick={e=>{e.stopPropagation();removeSuspect(s.id);}}>🗑</button>
+              </div>
+            </div>
+          ))}
+
+          {notes.length===0 && suspects.length===0 && (
+            <div style={{ position:'absolute', left:'50%', top:'50%', transform:'translate(-50%,-50%)', fontFamily:'"Courier New",monospace', fontSize:14, color:'rgba(255,255,255,0.2)', pointerEvents:'none', textAlign:'center' }}>
+              + Not veya Şüpheli ekle, aralarına ip çek
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Not Ekleme */}
       {showAddNote && (
-        <div className="eb-overlay" onClick={() => setShowAddNote(false)}>
-          <div className="eb-modal" onClick={e=>e.stopPropagation()}>
+        <div className="db-modal-overlay" onClick={() => setShowAddNote(false)}>
+          <div className="db-modal" onClick={e=>e.stopPropagation()}>
             <h3>Yeni Not</h3>
             <input placeholder="Başlık *" value={newNote.title} onChange={e=>setNewNote(n=>({...n,title:e.target.value}))}/>
             <textarea placeholder="İçerik" rows={4} value={newNote.text} onChange={e=>setNewNote(n=>({...n,text:e.target.value}))}/>
-            <div className="eb-modal-actions">
-              <button className="eb-btn-primary" onClick={addNote}>Ekle</button>
-              <button className="eb-btn-sec" onClick={()=>setShowAddNote(false)}>İptal</button>
+            <div className="db-modal-actions">
+              <button className="db-modal-btn-ok" onClick={addNote}>Ekle</button>
+              <button className="db-modal-btn-cancel" onClick={()=>setShowAddNote(false)}>İptal</button>
             </div>
           </div>
         </div>
       )}
 
-      {editNote && (
-        <div className="eb-overlay" onClick={()=>setEditNote(null)}>
-          <div className="eb-modal" onClick={e=>e.stopPropagation()}>
-            <h3>Notu Düzenle</h3>
-            <input value={editNote.title} onChange={e=>setEditNote(n=>({...n,title:e.target.value}))}/>
-            <textarea rows={4} value={editNote.text} onChange={e=>setEditNote(n=>({...n,text:e.target.value}))}/>
-            <div className="eb-modal-actions">
-              <button className="eb-btn-primary" onClick={saveEditNote}>Kaydet</button>
-              <button className="eb-btn-sec" onClick={()=>setEditNote(null)}>İptal</button>
-            </div>
-          </div>
-        </div>
-      )}
-
+      {/* Şüpheli Ekleme */}
       {showAddSuspect && (
-        <div className="eb-overlay" onClick={()=>setShowAddSuspect(false)}>
-          <div className="eb-modal" onClick={e=>e.stopPropagation()}>
+        <div className="db-modal-overlay" onClick={() => setShowAddSuspect(false)}>
+          <div className="db-modal" onClick={e=>e.stopPropagation()}>
             <h3>Şüpheli Ekle</h3>
             <input placeholder="Ad Soyad *" value={newSuspect.name} onChange={e=>setNewSuspect(s=>({...s,name:e.target.value}))}/>
             <input placeholder="Rol / Meslek" value={newSuspect.role} onChange={e=>setNewSuspect(s=>({...s,role:e.target.value}))}/>
             <input placeholder="Motif" value={newSuspect.motive} onChange={e=>setNewSuspect(s=>({...s,motive:e.target.value}))}/>
-            <div className="eb-modal-actions">
-              <button className="eb-btn-primary" onClick={addSuspect}>Ekle</button>
-              <button className="eb-btn-sec" onClick={()=>setShowAddSuspect(false)}>İptal</button>
+            <div className="db-modal-actions">
+              <button className="db-modal-btn-ok" onClick={addSuspect}>Ekle</button>
+              <button className="db-modal-btn-cancel" onClick={()=>setShowAddSuspect(false)}>İptal</button>
             </div>
           </div>
         </div>
       )}
 
-      {editSuspect && (
-        <div className="eb-overlay" onClick={()=>setEditSuspect(null)}>
-          <div className="eb-modal" onClick={e=>e.stopPropagation()}>
-            <h3>Şüpheliyi Düzenle</h3>
-            <input value={editSuspect.name} onChange={e=>setEditSuspect(s=>({...s,name:e.target.value}))}/>
-            <input value={editSuspect.role} onChange={e=>setEditSuspect(s=>({...s,role:e.target.value}))}/>
-            <input value={editSuspect.motive} onChange={e=>setEditSuspect(s=>({...s,motive:e.target.value}))}/>
-            <div className="eb-modal-actions">
-              <button className="eb-btn-primary" onClick={saveEditSuspect}>Kaydet</button>
-              <button className="eb-btn-sec" onClick={()=>setEditSuspect(null)}>İptal</button>
+      {/* Kart Görüntüleme */}
+      {viewCard && (
+        <div className="db-modal-overlay" onClick={() => setViewCard(null)}>
+          <div className="db-card-popup" onClick={e=>e.stopPropagation()}>
+            <div className="db-card-popup-paper" style={{ background: viewCard._isSuspect ? '#f0ece0' : (viewCard.color||'#fef9e7') }}>
+              <div className="db-card-popup-pin"/>
+              <button className="db-panel-close" onClick={() => setViewCard(null)}>✕</button>
+              <div className="db-card-popup-title">{viewCard._isSuspect ? viewCard.name : viewCard.title}</div>
+              <div className="db-card-popup-divider"/>
+              {viewCard._isSuspect ? (
+                <div>
+                  {viewCard.role   && <p className="db-card-popup-desc"><strong>Rol:</strong> {viewCard.role}</p>}
+                  {viewCard.motive && <p className="db-card-popup-desc"><strong>Motif:</strong> {viewCard.motive}</p>}
+                </div>
+              ) : (
+                <p className="db-card-popup-desc" style={{ whiteSpace:'pre-line' }}>{viewCard.text}</p>
+              )}
             </div>
           </div>
         </div>
       )}
-      {/* ── View Report Popup ── */}
+
+      {/* Olay Yeri Raporu */}
       {viewReport && caseData && (
-        <div className="eb-overlay eb-report-overlay" onClick={() => setViewReport(false)}>
-          <div className="eb-report-popup" onClick={e => e.stopPropagation()}>
-            <button className="eb-report-popup-close" onClick={() => setViewReport(false)}>✕ Kapat</button>
+        <div className="db-modal-overlay db-report-overlay" onClick={() => setViewReport(false)}>
+          <div className="db-report-popup" onClick={e=>e.stopPropagation()}>
+            <button className="db-report-close" onClick={() => setViewReport(false)}>✕ Kapat</button>
             <CrimeSceneReport caseData={caseData} unlockedSections={[]} />
-          </div>
-        </div>
-      )}
-
-      {/* ── View Note Popup ── */}
-      {viewNote && (
-        <div className="eb-overlay" onClick={() => setViewNote(null)}>
-          <div className="eb-view-modal" style={{ background: viewNote.color }} onClick={e => e.stopPropagation()}>
-            <div className="eb-pin eb-view-pin"/>
-            <button className="eb-view-close" onClick={() => setViewNote(null)}>✕</button>
-            <div className="eb-view-title">{viewNote.title}</div>
-            <div className="eb-view-text">{viewNote.text}</div>
-          </div>
-        </div>
-      )}
-
-      {/* ── View Suspect Popup ── */}
-      {viewSuspect && (
-        <div className="eb-overlay" onClick={() => setViewSuspect(null)}>
-          <div className="eb-view-suspect-modal" onClick={e => e.stopPropagation()}>
-            <button className="eb-view-close" onClick={() => setViewSuspect(null)}>✕</button>
-            <div className="eb-suspect-pin eb-view-pin"/>
-            <div className="eb-view-suspect-avatar">{viewSuspect.name.charAt(0).toUpperCase()}</div>
-            <div className="eb-view-suspect-name">{viewSuspect.name}</div>
-            {viewSuspect.role   && <div className="eb-view-suspect-role">{viewSuspect.role}</div>}
-            {viewSuspect.motive && <div className="eb-view-suspect-motive">⚠️ Motif: {viewSuspect.motive}</div>}
           </div>
         </div>
       )}

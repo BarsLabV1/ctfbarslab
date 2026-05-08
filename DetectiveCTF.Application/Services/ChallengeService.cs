@@ -84,7 +84,8 @@ public class ChallengeService : IChallengeService
                 myProgress?.Attempts ?? 0,
                 c.RequiredChallenge?.Title,
                 c.PosX,
-                c.PosY
+                c.PosY,
+                c.ImageUrl
             );
         }).ToList();
     }
