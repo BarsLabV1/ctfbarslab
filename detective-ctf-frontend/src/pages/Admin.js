@@ -75,7 +75,7 @@ const Admin = () => {
   const [qModal,     setQModal]     = useState(null);  // null | 'new' | qObj
 
   // forms
-  const blankCase = { title:'', description:'', story:'', difficulty:3, totalPoints:500, imageUrl:'' };
+  const blankCase = { title:'', description:'', story:'', difficulty:3, totalPoints:500, imageUrl:'', hasVM:false, dockerImage:'', domain:'' };
   const blankQ    = { caseId:'', title:'', description:'', category:'OSINT', order:1, points:100,
                       flag:'', requiredChallengeId:'', hasVM:false, dockerImage:'', vmConnectionInfo:'',
                       files:'',
@@ -273,7 +273,8 @@ const Admin = () => {
   /* ── case CRUD ── */
   const openNewCase  = () => { setCaseForm(blankCase); setCaseModal('new'); };
   const openEditCase = (c) => { setCaseForm({ title:c.title, description:c.description, story:c.story||'',
-    difficulty:c.difficulty, totalPoints:c.totalPoints, imageUrl:c.imageUrl||'' }); setCaseModal(c); };
+    difficulty:c.difficulty, totalPoints:c.totalPoints, imageUrl:c.imageUrl||'',
+    hasVM:c.hasVM||false, dockerImage:c.dockerImage||'', domain:c.domain||'' }); setCaseModal(c); };
 
   const saveCase = async () => {
     try {
@@ -953,6 +954,21 @@ const Admin = () => {
               )}
             </div>
 
+            <div className="adm-section-divider">🖥️ Senaryo VM (Tek Makine)</div>
+            <label className="adm-checkbox-label">
+              <input type="checkbox" checked={caseForm.hasVM||false} onChange={e => setCaseForm(f=>({...f,hasVM:e.target.checked}))} />
+              Bu senaryo için tek bir hedef makine var (tüm sorular bu makineden çözülür)
+            </label>
+            {caseForm.hasVM && (<>
+              <label>Docker Image *</label>
+              <input value={caseForm.dockerImage||''} onChange={e => setCaseForm(f=>({...f,dockerImage:e.target.value}))} placeholder="ctf/kan-ve-kod:latest" />
+              <label>Domain (opsiyonel)</label>
+              <input value={caseForm.domain||''} onChange={e => setCaseForm(f=>({...f,domain:e.target.value}))} placeholder="kanvekod.ctf (opsiyonel)" />
+              <p style={{fontSize:11,color:'#475569',marginTop:4}}>
+                💡 Image içinde web (80), SSH (22) gibi servisler olabilir. Senaryo başlatınca IP + port bilgisi oyuncuya gösterilir.
+              </p>
+            </>)}
+
             <div className="adm-form-actions">
               <button className="btn btn-primary" onClick={saveCase}>Kaydet</button>
               <button className="btn btn-secondary" onClick={() => setCaseModal(null)}>İptal</button>
@@ -1072,20 +1088,6 @@ const Admin = () => {
               <input placeholder="Motif" value={qForm.unlockSuspectMotive}
                 onChange={e => setQForm(f=>({...f, unlockSuspectMotive: e.target.value}))} />
             </div>
-            <div className="adm-form-row adm-vm-row">
-              <label className="adm-checkbox-label">
-                <input type="checkbox" checked={qForm.hasVM} onChange={e => setQForm(f=>({...f,hasVM:e.target.checked}))} />
-                VM var
-              </label>
-            </div>
-            {qForm.hasVM && (
-              <>
-                <label>Docker Image</label>
-                <input value={qForm.dockerImage} onChange={e => setQForm(f=>({...f,dockerImage:e.target.value}))} placeholder="ctf/image:latest" />
-                <label>VM Bağlantı Bilgisi (JSON)</label>
-                <input value={qForm.vmConnectionInfo} onChange={e => setQForm(f=>({...f,vmConnectionInfo:e.target.value}))} placeholder='{"port":22}' />
-              </>
-            )}
             <div className="adm-form-actions">
               <button className="btn btn-primary" onClick={saveQ}>Kaydet</button>
               <button className="btn btn-secondary" onClick={() => setQModal(null)}>İptal</button>

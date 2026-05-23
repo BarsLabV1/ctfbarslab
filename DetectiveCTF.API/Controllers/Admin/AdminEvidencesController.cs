@@ -8,7 +8,7 @@ namespace DetectiveCTF.API.Controllers.Admin;
 
 [ApiController]
 [Route("api/admin/evidences")]
-[Authorize]
+[Authorize(Roles = "Admin")]
 public class AdminEvidencesController : ControllerBase
 {
     private readonly IAdminEvidenceService _adminEvidenceService;

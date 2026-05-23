@@ -1,0 +1,6 @@
+﻿"Source","Server","Database","Tables","TotalRows","Users","Cases","Challenges","Evidences","Status","Note"
+"local_61100","localhost,61100","DetectiveCTFDb","14","17","2","1","5","3","OK","Aktif yerel API bu DByi kullaniyor"
+"docker_current_1433_bars_kopya2","localhost,1433","DetectiveCTFDb","14","5","1","0","0","0","OK","Su anki docker compose SQL volume: bars-kopya2_db_data"
+"docker_local_11433_container_layer","localhost,11433","DetectiveCTFDb","14","30","3","1","6","2","OK","Eski detectivectf-db-local container katmani"
+"volume_bars_db_data_attached","localhost,11436","bars_db_data_DetectiveCTFDb","14","3","1","0","0","0","OK","bars_db_data volume kopyasi attach edildi"
+"volume_ctfbarslab_db_data_attached","localhost,11436","ctfbarslab_db_data_DetectiveCTFDb","13","3","2","0","0","0","OK","ctfbarslab_db_data volume kopyasi attach edildi"

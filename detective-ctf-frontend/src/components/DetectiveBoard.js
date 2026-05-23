@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 import * as signalR from '@microsoft/signalr';
 import api from '../services/api';
 import { useToast } from '../hooks/useToast';
@@ -193,7 +193,7 @@ const AdminBoardCard = ({ card, onClick, onDragStart, wasDragged }) => {
         left: card.posX,
         top: card.posY,
         transform: `rotate(${card.rotation}deg)`,
-        background: card.type === 'note' ? (card.color || '#bacb9a') : undefined,
+        background: locked ? '#2a2a2a' : (card.type === 'note' ? (card.color || '#bacb9a') : undefined),
       }}
       onMouseDown={e => !locked && onDragStart(e)}
       onClick={() => {
@@ -202,17 +202,55 @@ const AdminBoardCard = ({ card, onClick, onDragStart, wasDragged }) => {
       }}
     >
       <div className="db-pin"/>
-      {locked && <div className="db-lock-icon">🔒</div>}
-      <div className="db-admin-card-icon">{TYPE_ICONS[card.type] || '📁'}</div>
-      <div className="db-admin-card-title">{card.title}</div>
-      {card.type === 'note' && card.content && (
-        <div className="db-admin-card-preview">{card.content.slice(0, 80)}{card.content.length > 80 ? '...' : ''}</div>
-      )}
-      {card.type === 'photo' && card.fileUrl && (
-        <img src={BASE + card.fileUrl} alt={card.title} className="db-admin-card-thumb"/>
-      )}
-      {['video','audio','document','terminal','website'].includes(card.type) && (
-        <div className="db-admin-card-hint">Tıkla → Görüntüle</div>
+      {locked ? (
+        /* Kilitli — sadece kilit ikonu, içerik gizli */
+        <div style={{
+          display:'flex', flexDirection:'column', alignItems:'center',
+          justifyContent:'center', flex:1, gap:8, padding:'20px 10px',
+        }}>
+          <div style={{fontSize:36}}>🔒</div>
+          <div style={{
+            fontSize:11, fontWeight:700, color:'rgba(255,255,255,0.5)',
+            textAlign:'center', fontFamily:'"Courier New",monospace',
+            letterSpacing:0.5,
+          }}>KİLİTLİ</div>
+          <div style={{
+            fontSize:10, color:'rgba(255,255,255,0.3)',
+            textAlign:'center', fontFamily:'"Courier New",monospace',
+          }}>Önceki soruyu çöz</div>
+        </div>
+      ) : (
+        <>
+          <div className="db-admin-card-icon">{TYPE_ICONS[card.type] || '📁'}</div>
+          <div className="db-admin-card-title" style={{ color: (() => {
+            const dark = ['video','terminal','website','audio'].includes(card.type);
+            if (dark) return '#f0f4ff';
+            if (card.type === 'note' && card.color) {
+              const hex = card.color.replace('#','');
+              const r = parseInt(hex.substr(0,2),16), g = parseInt(hex.substr(2,2),16), b = parseInt(hex.substr(4,2),16);
+              if ((r*299+g*587+b*114)/1000 < 128) return '#f0f4ff';
+            }
+            return '#0a0500';
+          })() }}>{card.title}</div>
+          {card.type === 'note' && card.content && (
+            <div className="db-admin-card-preview" style={{ color: (() => {
+              const dark = ['video','terminal','website','audio'].includes(card.type);
+              if (dark) return '#c8d8e8';
+              if (card.type === 'note' && card.color) {
+                const hex = card.color.replace('#','');
+                const r = parseInt(hex.substr(0,2),16), g = parseInt(hex.substr(2,2),16), b = parseInt(hex.substr(4,2),16);
+                if ((r*299+g*587+b*114)/1000 < 128) return '#c8d8e8';
+              }
+              return '#1a0800';
+            })() }}>{card.content.slice(0, 200)}</div>
+          )}
+          {card.type === 'photo' && card.fileUrl && (
+            <img src={BASE + card.fileUrl} alt={card.title} className="db-admin-card-thumb"/>
+          )}
+          {['video','audio','document','terminal','website'].includes(card.type) && (
+            <div className="db-admin-card-hint">Tıkla → Görüntüle</div>
+          )}
+        </>
       )}
     </div>
   );
@@ -263,11 +301,21 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
 
   const handleSetPan = useCallback((fn) => {
     setPan(prev => {
-      const next = typeof fn === 'function' ? fn(prev) : fn;
+      const raw = typeof fn === 'function' ? fn(prev) : fn;
+      const vp = viewportRef.current;
+      const vpW = vp ? vp.clientWidth  : window.innerWidth;
+      const vpH = vp ? vp.clientHeight : window.innerHeight;
+      // Pano boyutu scale ile değişir — viewport'tan max 100px dışarı çıkabilsin
+      const boardW = 4000 * scale;
+      const boardH = 3000 * scale;
+      const next = {
+        x: Math.min(100, Math.max(-(boardW - vpW + 100), raw.x)),
+        y: Math.min(100, Math.max(-(boardH - vpH + 100), raw.y)),
+      };
       if (onPanChange) onPanChange(next);
       return next;
     });
-  }, [onPanChange]);
+  }, [onPanChange, scale]);
 
   const isPanning = useRef(false);
   const panStart  = useRef({ x: 0, y: 0 });
@@ -427,7 +475,7 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
       const xs = (e.clientX - vp.left - pan.x) / scale;
       const ys = (e.clientY - vp.top  - pan.y) / scale;
       const delta = e.deltaY > 0 ? 0.95 : 1.05;
-      const newScale = Math.min(Math.max(0.3, scale * delta), 2.0);
+      const newScale = Math.min(Math.max(0.35, scale * delta), 1.5);
       handleSetPan({ x: e.clientX - vp.left - xs * newScale, y: e.clientY - vp.top - ys * newScale });
       handleSetScale(newScale);
     } else {
@@ -527,6 +575,7 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
         className="db-board"
         style={{
           transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
+          transformOrigin: '0 0',
           backgroundImage: `url(${process.env.PUBLIC_URL}/pano-cercevesiz.png)`,
           backgroundSize: '1024px 576px',
           backgroundRepeat: 'repeat',
@@ -1125,3 +1174,7 @@ const DetectiveBoard = ({ caseId, caseData, challenges: initialChallenges = [], 
 };
 
 export default DetectiveBoard;
+
+
+
+

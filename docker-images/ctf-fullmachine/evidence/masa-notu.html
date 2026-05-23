@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  body { background: #2a2a2a; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; font-family: 'Courier New', monospace; }
+  .note {
+    background: #f5f0d0;
+    width: 320px;
+    padding: 30px 28px;
+    box-shadow: 3px 3px 12px rgba(0,0,0,0.6), 6px 6px 24px rgba(0,0,0,0.4);
+    transform: rotate(-2deg);
+    position: relative;
+    border-top: 4px solid #e8d870;
+  }
+  .note::before {
+    content: '';
+    position: absolute;
+    top: -12px; left: 50%;
+    transform: translateX(-50%);
+    width: 20px; height: 20px;
+    background: radial-gradient(circle at 35% 30%, #ff6b6b, #cc0000 45%, #8b0000);
+    border-radius: 50%;
+    box-shadow: 1px 3px 6px rgba(0,0,0,0.7);
+  }
+  .note-title { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 16px; border-bottom: 1px dashed #ccc; padding-bottom: 8px; }
+  .note-line { font-size: 14px; color: #2a1a08; line-height: 2.2; border-bottom: 1px solid rgba(0,0,0,0.08); margin: 0; padding: 2px 0; }
+  .note-line.highlight { color: #8b0000; font-weight: bold; background: rgba(255,255,0,0.3); padding: 2px 4px; }
+  .note-footer { font-size: 10px; color: #aaa; margin-top: 16px; text-align: right; font-style: italic; }
+  .stamp { position: absolute; top: 10px; right: 10px; border: 2px solid rgba(180,0,0,0.5); color: rgba(180,0,0,0.5); font-size: 9px; font-weight: 900; padding: 2px 6px; letter-spacing: 2px; transform: rotate(8deg); }
+</style>
+</head>
+<body>
+<div class="note">
+  <div class="stamp">GİZLİ</div>
+  <div class="note-title">📋 Masa Notu — Olay Yeri Bulgusu</div>
+  <p class="note-line">Sunucu yedekleme aktif</p>
+  <p class="note-line">SSH erişimi: <span class="highlight">detective</span></p>
+  <p class="note-line">Şifre (encoded):</p>
+  <p class="note-line highlight" style="font-size:12px;letter-spacing:1px;">VHIwamFuMTIzIQ==</p>
+  <p class="note-line">Web panel: /admin-panel/</p>
+  <p class="note-line">DB backup: /secret-backup/</p>
+  <div class="note-footer">A.Y. — 14 Ocak 03:42</div>
+</div>
+</body>
+</html>

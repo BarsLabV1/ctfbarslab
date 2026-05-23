@@ -26,7 +26,8 @@ public class CaseService : ICaseService
                 c.TotalPoints,
                 c.ImageUrl,
                 c.Challenges.Count,
-                _context.UserCaseProgresses.Any(p => p.UserId == userId && p.CaseId == c.Id && p.IsCompleted)
+                _context.UserCaseProgresses.Any(p => p.UserId == userId && p.CaseId == c.Id && p.IsCompleted),
+                c.HasVM
             ))
             .ToListAsync();
 
@@ -50,7 +51,9 @@ public class CaseService : ICaseService
             caseEntity.Difficulty,
             caseEntity.TotalPoints,
             caseEntity.ImageUrl,
-            caseEntity.Challenges.Count
+            caseEntity.Challenges.Count,
+            caseEntity.HasVM,
+            caseEntity.Domain
         );
     }
 }

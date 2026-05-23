@@ -4,12 +4,12 @@ using DetectiveCTF.Application.Interfaces;
 using DetectiveCTF.Application.Interfaces.Admin;
 using DetectiveCTF.Application.Services;
 using DetectiveCTF.Application.Services.Admin;
+using DetectiveCTF.Core.Interfaces;
 using DetectiveCTF.Infrastructure.Persistence;
 using DetectiveCTF.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
@@ -21,6 +21,10 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<DockerService>();
+
+// Docker.DotNet tabanlı masaüstü servisi
+builder.Services.AddScoped<IDockerService, DesktopDockerService>();
+builder.Services.AddHostedService<DesktopCleanupService>();
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICaseService, CaseService>();
@@ -37,9 +41,16 @@ builder.Services.AddScoped<IAdminEvidenceService, AdminEvidenceService>();
 builder.Services.AddScoped<IAdminStatsService, AdminStatsService>();
 builder.Services.AddScoped<IAdminUserService, AdminUserService>();
 
+// VM expiry temizleme — her 10 dakikada bir çalışır
+builder.Services.AddHostedService<VmExpiryCleanupService>();
+
 builder.Services.AddSignalR();
 
-var jwtKey = builder.Configuration["Jwt:Key"] ?? "YourSuperSecretKeyForJWTTokenGeneration123456789";
+var jwtKey = builder.Configuration["Jwt:Key"]
+    ?? throw new InvalidOperationException("Jwt:Key yapılandırması eksik. appsettings.json veya environment variable ile set edin.");
+
+if (jwtKey.Length < 32)
+    throw new InvalidOperationException("Jwt:Key en az 32 karakter olmalı.");
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -71,11 +82,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+// CORS — sadece bilinen origin'lere izin ver
+var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
+    ?? new[] { "http://localhost:3000", "http://localhost:80" };
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        policy.SetIsOriginAllowed(_ => true)
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();

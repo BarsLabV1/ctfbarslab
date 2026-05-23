@@ -39,7 +39,7 @@ public class AuthService : IAuthService
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
 
-        var token = _jwtService.GenerateToken(user.Id, user.Username/*, user.IsAdmin*/);
+        var token = _jwtService.GenerateToken(user.Id, user.Username, user.IsAdmin);
 
         return new AuthResponse(
             user.Id,
@@ -58,7 +58,7 @@ public class AuthService : IAuthService
         if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             throw new Exception("Kullanıcı adı veya şifre hatalı");
 
-        var token = _jwtService.GenerateToken(user.Id, user.Username /*,user.IsAdmin*/);
+        var token = _jwtService.GenerateToken(user.Id, user.Username, user.IsAdmin);
 
         return new AuthResponse(
             user.Id,

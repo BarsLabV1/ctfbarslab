@@ -22,6 +22,7 @@ namespace DetectiveCTF.Infrastructure.Persistence
         public DbSet<UserCaseProgress> UserCaseProgresses { get; set; }
         public DbSet<UserChallengeProgress> UserChallengeProgresses { get; set; }
         public DbSet<VMInstance> VMInstances { get; set; }
+        public DbSet<ActiveInstance> ActiveInstances { get; set; }
         public DbSet<BoardState> BoardStates { get; set; }
         public DbSet<BoardCard> BoardCards { get; set; }
 
@@ -107,6 +108,20 @@ namespace DetectiveCTF.Infrastructure.Persistence
                 .WithMany()
                 .HasForeignKey(b => b.CaseId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // ActiveInstance — kullanıcı silinince instance'ları da sil
+            modelBuilder.Entity<ActiveInstance>()
+                .HasOne(a => a.User)
+                .WithMany()
+                .HasForeignKey(a => a.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ActiveInstance>()
+                .HasIndex(a => a.UserId);
+
+            modelBuilder.Entity<ActiveInstance>()
+                .HasIndex(a => a.ContainerId)
+                .IsUnique();
 
             // Seed data
             //SeedData(modelBuilder);

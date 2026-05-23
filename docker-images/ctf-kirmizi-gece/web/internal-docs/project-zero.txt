@@ -1,0 +1,10 @@
+PROJE SIFIR - DAHILI NOT
+
+Dr. Kerem Aslan son raporunda NexGen portalindaki sifir-gun acigini kapatmadan
+once biri admin paneline eristi. Kamera kaydinda gorunen ziyaretci kartinda
+"M.K." harfleri okunuyor.
+
+Rakip firma Orion Siber Guvenlik bu acigi olay gecesi piyasaya surdu.
+Orion tarafindaki saha sorumlusu: Mert Kaya.
+
+Final dogrulama formati: flag{Ad_Soyad}

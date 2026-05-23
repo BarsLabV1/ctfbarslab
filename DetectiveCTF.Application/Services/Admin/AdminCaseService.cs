@@ -31,7 +31,10 @@ public class AdminCaseService : IAdminCaseService
          c.TotalPoints,
          c.ImageUrl,
          c.IsActive,
-         c.Challenges.Count
+         c.Challenges.Count,
+         c.HasVM,
+         c.DockerImage,
+         c.Domain
      ))
      .ToListAsync();
     }
@@ -48,6 +51,9 @@ public class AdminCaseService : IAdminCaseService
             Difficulty = request.Difficulty,
             TotalPoints = request.TotalPoints,
             ImageUrl = request.ImageUrl,
+            HasVM = request.HasVM,
+            DockerImage = request.DockerImage,
+            Domain = request.Domain,
             IsActive = true
         };
 
@@ -70,6 +76,9 @@ public class AdminCaseService : IAdminCaseService
         caseEntity.Difficulty = request.Difficulty;
         caseEntity.TotalPoints = request.TotalPoints;
         caseEntity.ImageUrl = request.ImageUrl;
+        caseEntity.HasVM = request.HasVM;
+        caseEntity.DockerImage = request.DockerImage;
+        caseEntity.Domain = request.Domain;
 
         await _context.SaveChangesAsync();
     }

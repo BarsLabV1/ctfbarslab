@@ -1,0 +1,3 @@
+﻿"Id","ChallengeId","UserId","TeamId","ContainerId","ContainerName","IPAddress","Port","Status","CreatedAt","ExpiresAt"
+"1","","1","","b139147717457756e4b600f482c42ad0f0415db1291d74085b10ab95eca776b3","ctf_kali_u1_53b443","10.10.74.179","32770","stopped","30.04.2026 12:58:08","30.04.2026 16:58:08"
+"2","","1","","3a85528a8e005940765f780579b757fbb3b55a0307ac60d0f47a3f55572678f5","ctf_kali_u1_35d2c8","10.10.74.179","32768","stopped","14.05.2026 13:26:07","14.05.2026 17:26:07"

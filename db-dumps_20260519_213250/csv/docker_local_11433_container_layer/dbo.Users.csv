@@ -1,0 +1,4 @@
+﻿"Id","Username","Email","PasswordHash","TotalScore","IsAdmin","PreferredRole","CreatedAt"
+"3","pery","taha@pery.com","[MASKED]","0","False","","18.05.2026 17:07:42"
+"4","peryy","pery@taha","[MASKED]","0","False","","18.05.2026 17:09:52"
+"1002","admin","admin@bars.local","[MASKED]","0","True","","18.05.2026 17:52:31"

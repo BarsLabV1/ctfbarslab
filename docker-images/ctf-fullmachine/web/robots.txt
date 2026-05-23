@@ -1,0 +1,6 @@
+User-agent: *
+Disallow: /secret-backup/
+Disallow: /admin-panel/
+Disallow: /.git/
+
+# Yedekleme dizini: /secret-backup/

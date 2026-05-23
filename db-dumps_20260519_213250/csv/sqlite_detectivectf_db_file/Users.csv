@@ -1,0 +1,5 @@
+﻿Id,Username,Email,PasswordHash,TotalScore,IsAdmin,PreferredRole,CreatedAt
+1,admin,admin@detectivectf.com,[MASKED],1270,1,,2026-04-21 23:52:16.0875806
+5,taha,taha@gmail.com,[MASKED],300,0,,2026-04-23 18:48:24.4877326
+6,test,test@test,[MASKED],200,0,,2026-04-23 20:28:50.8397763
+7,Cyber,asdasd@gmail.com,[MASKED],100,0,,2026-04-23 20:29:15.593297

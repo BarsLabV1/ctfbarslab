@@ -1,0 +1,17 @@
+﻿Id,Title,Description,Story,Difficulty,TotalPoints,ImageUrl,IsActive,CreatedAt
+1,Siber Suikast: Şirket İçi Komplo,Bir teknoloji CEO'su evinde ölü bulundu. Tüm kanıtlar dijital dünyada...,"John Smith, büyük bir teknoloji şirketinin CEO'su, evinde ölü bulundu. Güvenlik kameraları, bilgisayar logları ve şirket içi sistemler incelenmeli. Her ipucu sizi bir sonraki adıma götürecek.",3,1500,,1,2026-04-21 23:52:16.0878103
+4,Dijital Iz: Bir CTOnun Olumu,Siber guvenlik sirketinin CTOsu Marcus Webb ofisinde olu bulundu.,"Marcus Webb, TechSecure sirketinin CTOsu, Sali sabahi ofisinde olu bulundu. Resmi aciklama kalp krizi. Ama IT departmani o gece sunucularda anormal aktiviteler fark etti.",3,2000,,1,2026-04-22 00:03:20.4389418
+5,23:17den Sonra,"Ic denetim uzmani Deniz Erkan, kilitli arsiv ofisinde olu bulundu.","14 Nisan gecesi, Novacore Finansin 5. kat arsiv ofisinde calisan ic denetim uzmani Deniz Erkan olu bulunmustur. Odanin kapisi iceriden kilitliydi. Acik bilgisayarda tek bir cumle: Rozetim 23:17den sonra kullanildiysa, o ben degilim.",2,2000,,1,2026-04-22 00:03:20.5756729
+6,Golgede Iz: Argos Operasyonu,"Bir muhbirin evinde bulunan kodlanmis not, kucuk bir lojistik sirketinin ic sistemlerine uzanan karanlik bir operasyonu gozler onune seriyor.","Bir muhbir, Argos Lojistik adli bir sirketin ic sistemlerinde yasadisi mal transferleri yapildigini ihbar etti. Muhbirin evinde bulunan tek ipucu:
+
+aW50ZXJuYWxfc2hpcG1lbnRfcGFuZWw=",3,2500,,1,2026-04-22 00:03:20.6995583
+7,CEO SÜİKASTİ,"Bir teknoloji şirketinin CEO’su ofisinde öldürülür.
+Kapıdan uzanan bir kol silah sıkar.","saldırganın kolunda özel bir dövme var
+bu dövme sadece şirket kurucusunun ailesinde bulunuyor",2,1000,,1,2026-04-22 00:34:46.7527041
+8,Kan ve Kod: CEO Suikasti,Bir sirketin CEOsu ofisinde olduruldu. Saldirganin kolunda ozel bir aile armasi dovmesi goruldu.,"Novatek Teknoloji CEOsu Ahmet Yilmaz, Carsamba gunu ofisinde vurularak olduruldu. Guvenlik kamerasi kaydinda kapidan uzanan bir kol ve kolda ozel bir aile armasi dovmesi goruldu. Bu dovme sadece sirket kurucusunun ailesinde bulunuyor.
+
+CEOnun masasinda bir kagit bulundu:
+
+WTZwX3Bhc3NfMjAyNA==
+
+Sorusturma basliyor.",3,2000,,1,2026-04-22 01:20:19.8277834

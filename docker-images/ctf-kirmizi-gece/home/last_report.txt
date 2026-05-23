@@ -1,0 +1,19 @@
+NexGen Teknoloji A.S. - GIZLI
+Konu: Proje Sifir - Kritik Guvenlik Acigi
+Tarih: 23 Mart 2024, 23:30
+
+Bu raporu yazan son kisi olabilirim.
+
+Birisi hesabimi kullanarak /internal-docs/ dizinine erismis.
+Portal SQL injection acigi uzerinden admin notlarina ulasilmis.
+
+Suphelim var ama kanit zinciri tamamlanmali:
+1. Kamera son karesinde ziyaretci karti: M.K.
+2. Dahili belgede Orion Siber Guvenlik ve Mert Kaya geciyor.
+3. Sistemde /usr/local/bin/backup-check dosyasi olmasi gerekmiyor.
+
+Sifremi degistirdim: R3dN1ght!
+
+Eger root yetkisi alirsan /root/root.txt dosyasini oku.
+
+- Dr. Kerem Aslan

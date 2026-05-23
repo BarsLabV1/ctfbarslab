@@ -1,0 +1,5 @@
+﻿Id,CaseId,Type,Title,Content,FileUrl,ExternalUrl,DockerImage,PosX,PosY,Rotation,Color,UnlockedByChallenge,CreatedAt
+1,7,note,sifre :,cGFzc3dvcmQxMjM0IQ==,,,,400,400,0.0,#bacb9a,,2026-04-22 00:35:41.3867841
+2,7,video,,,/uploads/071895e1-4598-40a6-acde-396818ea164b.mp4,,,400,400,0.0,#bacb9a,,2026-04-22 00:36:07.8281327
+3,7,note,YOL,"CEO'nun masasındaki kağıtta bulunan kod çözüldü.
+Bu kodun CEO'nun bilgisayar şifresi olduğu düşünülüyor.",,,,400,400,0.0,#bacb9a,25,2026-04-22 00:39:04.1996809

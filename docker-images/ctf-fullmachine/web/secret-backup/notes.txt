@@ -1,0 +1,11 @@
+TechCorp IT Notlari - GIZLI
+===========================
+Tarih: 14 Ocak
+
+- SSH erisimi icin detective kullanicisi aktif edildi
+- Gecici sifre: Tr0jan123! (degistirilmeli!)
+- Admin paneli /admin-panel/ altinda
+- DB yedegi bu dizinde
+
+NOT: Bu dizini kapatmayi unutma!
+- IT Departmani

@@ -5,23 +5,30 @@ import api from '../services/api';
 import { useToast } from '../hooks/useToast';
 import './Navbar.css';
 
-/* ── BarsBox Paneli (Navbar'da) ── */
+/* -- BarsBox: Sanal Makine Widget -- */
 const KaliWidget = () => {
   const { showToast } = useToast();
   const [kaliData, setKaliData] = useState(null);
   const [starting, setStarting] = useState(false);
   const [stopping, setStopping] = useState(false);
-  const [open,     setOpen]     = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const vncUrl = kaliData
+    ? `http://${kaliData.ipAddress}:${kaliData.kaliPort}/vnc.html?autoconnect=true&resize=scale&clipboard=1`
+    : null;
 
   const startKali = async () => {
     setStarting(true);
+    setDropdownOpen(true);
     try {
       const res = await api.post('/challenges/start-kali-standalone');
       setKaliData(res.data);
       showToast('BarsBox başlatıldı!', 'success');
     } catch (err) {
       showToast(err.response?.data?.message || 'BarsBox başlatılamadı', 'error');
-    } finally { setStarting(false); }
+    } finally {
+      setStarting(false);
+    }
   };
 
   const stopKali = async () => {
@@ -29,47 +36,66 @@ const KaliWidget = () => {
     try {
       await api.post('/challenges/stop-kali-standalone');
       setKaliData(null);
+      setDropdownOpen(false);
       showToast('BarsBox durduruldu', 'info');
-    } catch { showToast('Durdurulamadı', 'error'); }
-    finally { setStopping(false); }
+    } catch {
+      showToast('Durdurulamadı', 'error');
+    } finally {
+      setStopping(false);
+    }
+  };
+
+  const handleBtnClick = () => {
+    if (kaliData) {
+      // Makine zaten çalışıyorsa dropdown aç/kapat
+      setDropdownOpen(prev => !prev);
+    } else if (!starting) {
+      // Makine yoksa başlat
+      startKali();
+    }
+  };
+
+  const openInNewTab = () => {
+    if (vncUrl) window.open(vncUrl, '_blank');
   };
 
   return (
     <div className="kali-widget">
       <button
-        className={`kali-widget-btn ${kaliData ? 'running' : ''}`}
-        onClick={() => setOpen(o => !o)}
+        className={`kali-widget-btn ${kaliData ? 'running' : ''} ${starting ? 'starting' : ''}`}
+        onClick={handleBtnClick}
+        disabled={starting}
       >
-        🖥️ BARSBOX {kaliData ? <span className="kali-dot-sm"/> : null} {open ? '▲' : '▼'}
+        {starting ? (
+          <>⏳ Başlatılıyor...</>
+        ) : kaliData ? (
+          <>🖥️ BARSBOX <span className="kali-dot-sm" /></>
+        ) : (
+          <>🖥️ BARSBOX</>
+        )}
       </button>
 
-      {open && (
+      {dropdownOpen && (
         <div className="kali-widget-dropdown">
-          {!kaliData ? (
-            <>
-              <p className="kali-widget-desc">Tarayıcıdan Ubuntu masaüstüne eriş.</p>
-              <button className="kali-widget-start" onClick={startKali} disabled={starting}>
-                {starting ? '⏳ Başlatılıyor...' : '🚀 BarsBox Başlat'}
-              </button>
-            </>
-          ) : (
+          {starting && !kaliData && (
+            <div className="kali-widget-desc">
+              ⏳ BarsBox başlatılıyor, lütfen bekleyin... (~15sn)
+            </div>
+          )}
+
+          {kaliData && (
             <div className="kali-widget-active">
               <div className="kali-widget-status">
                 <span className="kali-dot-lg" /> BARSBOX ÇALIŞIYOR
               </div>
-              <a
-                href={`http://${kaliData.ipAddress}:${kaliData.kaliPort}/`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="kali-widget-open"
-              >
-                🖥️ Masaüstünü Aç
-              </a>
               <div className="kali-widget-port">
-                <code>{kaliData.ipAddress}:{kaliData.kaliPort}</code>
+                Adres: <code>{kaliData.ipAddress}:{kaliData.kaliPort}</code>
               </div>
+              <button className="kali-widget-open" onClick={openInNewTab}>
+                🖥️ Makineyi Aç
+              </button>
               <button className="kali-widget-stop" onClick={stopKali} disabled={stopping}>
-                {stopping ? '...' : '⏹ Durdur'}
+                {stopping ? '⏳ Durduruluyor...' : '⏹ Durdur'}
               </button>
             </div>
           )}
@@ -92,9 +118,15 @@ const Navbar = () => {
     <nav className="navbar">
       <div className="navbar-inner">
         <Link to="/" className="navbar-brand">
-          <span className="brand-icon">◈</span>
-          <span className="brand-text">DEDEKTIF</span>
-          <span className="brand-sub">// CTF</span>
+          <img
+            src={`${process.env.PUBLIC_URL}/barslab-logo.png`}
+            alt="BarsLab"
+            style={{ width: 34, height: 34, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }}
+          />
+          <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
+            <span className="brand-text">BarsLab</span>
+            <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.35)', letterSpacing: 2, fontFamily: 'monospace', textTransform: 'uppercase' }}>CTF Platform</span>
+          </div>
         </Link>
 
         {user && (
@@ -114,7 +146,7 @@ const Navbar = () => {
             </div>
 
             <div className="navbar-user">
-              {/* Kali widget */}
+              {/* BarsBox widget */}
               <KaliWidget />
 
               <div className="user-score">
@@ -125,7 +157,7 @@ const Navbar = () => {
                 <span className="user-avatar">{user.username?.charAt(0).toUpperCase()}</span>
                 <span className="user-name">{user.username?.toUpperCase()}</span>
               </div>
-              <button onClick={handleLogout} className="logout-btn">⏻</button>
+              <button onClick={handleLogout} className="logout-btn" title="Çıkış">⏻</button>
             </div>
           </>
         )}

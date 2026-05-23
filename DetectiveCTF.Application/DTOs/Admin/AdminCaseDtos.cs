@@ -6,7 +6,10 @@ public record AdminCaseRequest(
     string Story,
     int Difficulty,
     int TotalPoints,
-    string? ImageUrl
+    string? ImageUrl,
+    bool HasVM = false,
+    string? DockerImage = null,
+    string? Domain = null
 );
 
 public record AdminCaseListDto(
@@ -18,5 +21,8 @@ public record AdminCaseListDto(
     int TotalPoints,
     string? ImageUrl,
     bool IsActive,
-    int ChallengeCount
+    int ChallengeCount,
+    bool HasVM = false,
+    string? DockerImage = null,
+    string? Domain = null
 );

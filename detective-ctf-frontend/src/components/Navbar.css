@@ -21,29 +21,17 @@
 .navbar-brand {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   text-decoration: none;
   flex-shrink: 0;
 }
 
-.brand-icon {
-  color: var(--accent-yellow);
-  font-size: 18px;
-}
-
 .brand-text {
-  font-family: var(--font-title);
-  font-size: 16px;
-  font-weight: 900;
-  color: var(--accent-yellow);
-  letter-spacing: 3px;
-}
-
-.brand-sub {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--text-muted);
-  letter-spacing: 1px;
+  font-family: -apple-system, 'SF Pro Display', 'Segoe UI', sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.5px;
 }
 
 /* Nav links */
@@ -176,7 +164,7 @@
   margin-left: auto;
 }
 
-/* ── Kali Widget ── */
+/* ── BarsBox Widget ── */
 .kali-widget { position: relative; }
 
 .kali-widget-btn {
@@ -194,12 +182,29 @@
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
+  border-radius: 3px;
 }
 
 .kali-widget-btn:hover,
 .kali-widget-btn.running {
   background: rgba(255,59,59,0.18);
   border-color: rgba(255,59,59,0.5);
+}
+
+.kali-widget-btn.starting {
+  background: rgba(255,165,0,0.12);
+  border-color: rgba(255,165,0,0.4);
+  color: #ffa500;
+  animation: blink-starting 1.2s ease-in-out infinite;
+}
+
+@keyframes blink-starting {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+.kali-widget-btn:disabled {
+  cursor: wait;
 }
 
 .kali-dot-sm {
@@ -211,44 +216,41 @@
   display: inline-block;
 }
 
+/* ── BarsBox Dropdown ── */
 .kali-widget-dropdown {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  width: 260px;
+  width: 280px;
   background: #0d0f14;
   border: 1px solid rgba(255,59,59,0.25);
-  padding: 14px;
-  z-index: 500;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+  border-radius: 6px;
+  padding: 16px;
+  z-index: 600;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.8);
+  animation: dropdown-in 0.2s ease-out;
+}
+
+@keyframes dropdown-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .kali-widget-desc {
   font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--text-muted);
-  margin-bottom: 10px;
-  line-height: 1.5;
+  font-size: 11px;
+  color: #ffa500;
+  line-height: 1.6;
+  text-align: center;
+  padding: 12px 0;
+  animation: blink-starting 1.2s ease-in-out infinite;
 }
 
-.kali-widget-start {
-  width: 100%;
-  padding: 9px;
-  background: rgba(255,59,59,0.12);
-  border: 1px solid rgba(255,59,59,0.3);
-  color: #ff3b3b;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  cursor: pointer;
-  transition: all 0.2s;
+.kali-widget-active {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
-
-.kali-widget-start:hover:not(:disabled) { background: rgba(255,59,59,0.22); }
-.kali-widget-start:disabled { opacity: 0.5; cursor: not-allowed; }
-
-.kali-widget-active { display: flex; flex-direction: column; gap: 8px; }
 
 .kali-widget-status {
   display: flex;
@@ -258,6 +260,7 @@
   font-size: 10px;
   color: #ff3b3b;
   letter-spacing: 1px;
+  font-weight: 700;
 }
 
 .kali-dot-lg {
@@ -269,22 +272,6 @@
   display: inline-block;
 }
 
-.kali-widget-open {
-  display: block;
-  padding: 9px;
-  background: #ff3b3b;
-  color: #fff;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-align: center;
-  text-decoration: none;
-  transition: opacity 0.2s;
-}
-
-.kali-widget-open:hover { opacity: 0.85; }
-
 .kali-widget-port {
   font-family: var(--font-mono);
   font-size: 9px;
@@ -295,17 +282,53 @@
   color: #ff3b3b;
   background: rgba(255,59,59,0.1);
   padding: 1px 5px;
+  border-radius: 2px;
+}
+
+/* Makineyi Aç butonu */
+.kali-widget-open {
+  display: block;
+  width: 100%;
+  padding: 11px;
+  background: linear-gradient(135deg, #ff3b3b 0%, #e02020 100%);
+  border: none;
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-align: center;
+  text-decoration: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 12px rgba(255,59,59,0.3);
+}
+
+.kali-widget-open:hover {
+  background: linear-gradient(135deg, #ff5050 0%, #ff3b3b 100%);
+  box-shadow: 0 4px 20px rgba(255,59,59,0.45);
+  transform: translateY(-1px);
 }
 
 .kali-widget-stop {
+  width: 100%;
   background: transparent;
   border: 1px solid rgba(255,255,255,0.08);
   color: var(--text-muted);
   font-family: var(--font-mono);
   font-size: 9px;
-  padding: 4px 10px;
+  padding: 7px 10px;
   cursor: pointer;
   transition: all 0.2s;
+  border-radius: 3px;
+  text-align: center;
 }
 
 .kali-widget-stop:hover { border-color: rgba(255,59,59,0.3); color: #ff3b3b; }
+.kali-widget-stop:disabled { opacity: 0.5; cursor: not-allowed; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}

@@ -109,7 +109,6 @@
   z-index: 10;
   box-shadow: 15px 25px 40px rgba(0,0,0,0.95);
 }
-
 /* ── Pin ── */
 .db-pin {
   position: absolute;
@@ -288,27 +287,30 @@
 
 /* ── User note — sticky note image ── */
 .db-user-note {
-  width: 190px;
-  min-height: 190px;
-  padding: 32px 18px 18px;
+  width: 280px;
+  min-height: 240px;
+  padding: 36px 20px 20px;
   border-radius: 2px;
   font-family: 'Courier New', monospace;
   box-shadow: 4px 6px 18px rgba(0,0,0,0.5);
 }
 
 .db-note-title {
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 900;
   text-decoration: underline;
-  margin-bottom: 8px;
-  color: #3a2a00;
+  margin-bottom: 12px;
+  color: #0a0500;
+  letter-spacing: 0.3px;
 }
 
 .db-note-text {
-  font-size: 11px;
-  color: #4a3a10;
-  line-height: 1.6;
+  font-size: 14px;
+  color: #1a0800;
+  line-height: 1.9;
   white-space: pre-line;
+  word-break: break-word;
+  font-weight: 600;
 }
 
 /* ── Suspect card — polaroid frame ── */
@@ -769,16 +771,16 @@
 
 /* ── Admin Board Cards ── */
 .db-admin-card {
-  width: 180px;
-  min-height: 140px;
-  max-height: 220px;
-  padding: 28px 12px 12px;
+  width: 240px;
+  min-height: 180px;
+  max-height: 320px;
+  padding: 32px 16px 16px;
   border-radius: 2px;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 4px;
+  gap: 8px;
   overflow: hidden;
   box-sizing: border-box;
 }
@@ -791,15 +793,15 @@
 .db-admin-website { background: #0d1117; border: 2px solid #00d4ff; }
 .db-admin-audio   { background: #1a0a2e; border: 2px solid #a855f7; }
 
-.db-admin-card-icon { font-size: 20px; flex-shrink: 0; }
+.db-admin-card-icon { font-size: 26px; flex-shrink: 0; }
 
 .db-admin-card-title {
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: #1a1a1a;
-  line-height: 1.3;
+  color: #0a0500;  /* açık kartlar için koyu */
+  line-height: 1.4;
   word-break: break-word;
   text-align: center;
   width: 100%;
@@ -810,25 +812,50 @@
   flex-shrink: 0;
 }
 
+/* Açık arka planlı kartlar — koyu yazı */
+.db-admin-note .db-admin-card-title,
+.db-admin-photo .db-admin-card-title,
+.db-admin-document .db-admin-card-title {
+  color: #0a0500;
+}
+
+/* Koyu arka planlı kartlar — açık yazı */
 .db-admin-terminal .db-admin-card-title,
 .db-admin-video .db-admin-card-title,
 .db-admin-website .db-admin-card-title,
 .db-admin-audio .db-admin-card-title {
-  color: #e2e8f0;
+  color: #f0f4ff;
 }
 
 .db-admin-card-preview {
-  font-size: 9px;
-  color: #444;
-  line-height: 1.5;
+  font-size: 13px;
+  color: #1a0800;  /* açık kartlar için */
+  line-height: 1.7;
   font-family: 'Courier New', monospace;
+  font-weight: 600;
   width: 100%;
   overflow: hidden;
   display: -webkit-box;
-  -webkit-line-clamp: 4;
+  -webkit-line-clamp: 6;
   -webkit-box-orient: vertical;
   word-break: break-word;
   text-align: left;
+}
+
+/* Açık arka planlı kartlar — koyu yazı */
+.db-admin-note .db-admin-card-preview,
+.db-admin-photo .db-admin-card-preview,
+.db-admin-document .db-admin-card-preview {
+  color: #1a0800;
+}
+
+/* Koyu arka planlı kartlar — açık yazı */
+.db-admin-terminal .db-admin-card-preview,
+.db-admin-video .db-admin-card-preview,
+.db-admin-website .db-admin-card-preview,
+.db-admin-audio .db-admin-card-preview {
+  color: #c8d8e8;
+  font-weight: 500;
 }
 
 .db-admin-card-thumb {

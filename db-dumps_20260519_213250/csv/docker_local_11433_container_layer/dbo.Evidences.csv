@@ -1,0 +1,3 @@
+﻿"Id","ChallengeId","Title","Type","FileUrl","Description","Metadata","Order"
+"1","1002","Kamera son kare","image","/evidence/kirmizi-gece/kamera-son-kare.svg","23:47 zaman damgası, kırmızı iz ve M.K. rozetini gösteren güvenlik kamerası karesi.","{""timestamp"":""23:47"",""location"":""Orion Lab - B Koridoru""}","1"
+"2","1007","Orion kimlik kartı","image","/evidence/kirmizi-gece/kimlik-karti.svg","M.K. baş harflerini Mert Kaya ile eşleştiren kimlik kartı delili.","{""suspect"":""Mert Kaya"",""department"":""Project Zero""}","1"

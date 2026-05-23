@@ -1,0 +1,2 @@
+﻿"Id","ChallengeId","UserId","TeamId","ContainerId","ContainerName","IPAddress","Port","Status","CreatedAt","ExpiresAt"
+"2","","2","","1c3f8b5fd0184c283986c3af0e4e40fbc79bb0d7374b612fd16693eaa6946672","ctf_kali_u2_218b23","localhost","32769","running","19.05.2026 18:10:20","19.05.2026 22:10:20"

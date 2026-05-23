@@ -1,0 +1,7 @@
+NEXGEN IC AG HARITASI
+
+portal.local       80/tcp   Calisan Portali
+portal.local       22/tcp   SSH
+
+Not: Hedef makine sadece ctf-network icinden erisilebilir.
+BarsBox/Kali masaustunden hedef IP adresini kullan.

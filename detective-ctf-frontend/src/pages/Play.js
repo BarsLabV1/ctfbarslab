@@ -57,7 +57,7 @@ const KaliPanel = () => {
                 <span className="kali-active-label">KALİ ÇALIŞIYOR</span>
               </div>
               <a
-                href={`https://${kaliData.ipAddress}:${kaliData.kaliPort}/`}
+                href={`http://${kaliData.ipAddress}:${kaliData.kaliPort}/vnc.html?autoconnect=true&resize=scale&clipboard=1`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="kali-open-btn"

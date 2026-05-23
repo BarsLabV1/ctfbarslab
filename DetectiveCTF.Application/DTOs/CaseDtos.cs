@@ -8,7 +8,8 @@ public record CaseListDto(
     int TotalPoints,
     string? ImageUrl,
     int ChallengeCount,
-    bool IsCompleted
+    bool IsCompleted,
+    bool HasVM = false
 );
 
 public record CaseDetailDto(
@@ -19,5 +20,7 @@ public record CaseDetailDto(
     int Difficulty,
     int TotalPoints,
     string? ImageUrl,
-    int ChallengeCount
+    int ChallengeCount,
+    bool HasVM = false,
+    string? Domain = null
 );

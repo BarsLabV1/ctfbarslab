@@ -7,7 +7,7 @@ namespace DetectiveCTF.API.Controllers.Admin;
 
 [ApiController]
 [Route("api/admin/files")]
-[Authorize]
+[Authorize(Roles = "Admin")]
 public class AdminFilesController : ControllerBase
 {
     private readonly IAdminFileService _adminFileService;

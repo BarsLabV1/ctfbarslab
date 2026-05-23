@@ -15,25 +15,31 @@ public class JwtService
         _configuration = configuration;
     }
 
-    public string GenerateToken(int userId, string username)
-    {
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
-            _configuration["Jwt:Key"] ?? "YourSuperSecretKeyForJWTTokenGeneration123456789"));
+    private string GetKey() =>
+        _configuration["Jwt:Key"]
+        ?? throw new InvalidOperationException("Jwt:Key yapılandırması eksik.");
 
+    public string GenerateToken(int userId, string username, bool isAdmin = false)
+    {
+        var key         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(GetKey()));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        var claims = new[]
+        var claims = new List<Claim>
         {
             new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
             new Claim(ClaimTypes.Name, username),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
         };
 
+        // Admin claim — controller'larda DB'ye gitmeden kontrol edilebilir
+        if (isAdmin)
+            claims.Add(new Claim(ClaimTypes.Role, "Admin"));
+
         var token = new JwtSecurityToken(
-            issuer: _configuration["Jwt:Issuer"] ?? "DetectiveCTF",
-            audience: _configuration["Jwt:Audience"] ?? "DetectiveCTF",
-            claims: claims,
-            expires: DateTime.UtcNow.AddDays(7),
+            issuer:            _configuration["Jwt:Issuer"]   ?? "DetectiveCTF",
+            audience:          _configuration["Jwt:Audience"] ?? "DetectiveCTF",
+            claims:            claims,
+            expires:           DateTime.UtcNow.AddDays(7),
             signingCredentials: credentials
         );
 
@@ -45,19 +51,18 @@ public class JwtService
         try
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.UTF8.GetBytes(
-                _configuration["Jwt:Key"] ?? "YourSuperSecretKeyForJWTTokenGeneration123456789");
+            var key          = Encoding.UTF8.GetBytes(GetKey());
 
             tokenHandler.ValidateToken(token, new TokenValidationParameters
             {
                 ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(key),
-                ValidateIssuer = true,
-                ValidIssuer = _configuration["Jwt:Issuer"] ?? "DetectiveCTF",
-                ValidateAudience = true,
-                ValidAudience = _configuration["Jwt:Audience"] ?? "DetectiveCTF",
-                ValidateLifetime = true,
-                ClockSkew = TimeSpan.Zero
+                IssuerSigningKey         = new SymmetricSecurityKey(key),
+                ValidateIssuer           = true,
+                ValidIssuer              = _configuration["Jwt:Issuer"]   ?? "DetectiveCTF",
+                ValidateAudience         = true,
+                ValidAudience            = _configuration["Jwt:Audience"] ?? "DetectiveCTF",
+                ValidateLifetime         = true,
+                ClockSkew                = TimeSpan.Zero
             }, out SecurityToken validatedToken);
 
             var jwtToken = (JwtSecurityToken)validatedToken;

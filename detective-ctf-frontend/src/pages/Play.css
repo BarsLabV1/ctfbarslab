@@ -8,9 +8,114 @@
   border-bottom: 1px solid rgba(255,255,255,0.08);
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 12px 24px;
+  gap: 16px;
+  padding: 10px 24px;
+  flex-wrap: wrap;
 }
+
+/* ── Senaryo VM Bar ── */
+.case-vm-bar {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}
+
+.case-vm-start-btn {
+  background: linear-gradient(135deg, #8b4513, #5c2a0a);
+  border: 1px solid rgba(201,151,90,0.4);
+  color: #f0d090;
+  padding: 7px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+.case-vm-start-btn:hover:not(:disabled) { opacity: 0.85; }
+.case-vm-start-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.case-vm-active {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(20,12,5,0.9);
+  border: 1px solid rgba(201,151,90,0.25);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 11px;
+}
+
+.case-vm-dot {
+  width: 7px; height: 7px;
+  background: #80c050;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #80c050;
+  flex-shrink: 0;
+}
+
+.case-vm-label {
+  font-size: 9px;
+  font-weight: 900;
+  color: #80c050;
+  letter-spacing: 1px;
+  font-family: monospace;
+}
+
+.case-vm-ip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(0,212,255,0.08);
+  border: 1px solid rgba(0,212,255,0.2);
+  border-radius: 4px;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.case-vm-ip:hover { background: rgba(0,212,255,0.16); }
+.case-vm-ip code { color: #00d4ff; font-size: 12px; font-weight: 700; letter-spacing: 1px; }
+.case-vm-ip span { font-size: 10px; color: #64748b; }
+
+.case-vm-web-btn {
+  background: rgba(0,212,255,0.1);
+  border: 1px solid rgba(0,212,255,0.3);
+  color: #00d4ff;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.case-vm-web-btn:hover { background: rgba(0,212,255,0.2); }
+
+.case-vm-ssh {
+  font-family: monospace;
+  font-size: 10px;
+  color: #94a3b8;
+  background: rgba(255,255,255,0.05);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.case-vm-domain {
+  font-size: 10px;
+  color: #c9975a;
+  font-family: monospace;
+}
+
+.case-vm-stop-btn {
+  background: rgba(192,57,43,0.15);
+  border: 1px solid rgba(192,57,43,0.3);
+  color: #e05040;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.case-vm-stop-btn:hover { background: rgba(192,57,43,0.25); }
 
 .play-title {
   flex: 1;

@@ -1,0 +1,11 @@
+.git
+.gitignore
+.vs
+.vscode
+detective-ctf-frontend/node_modules
+detective-ctf-frontend/build
+**/bin/
+**/obj/
+*.png
+*.sql
+*.md

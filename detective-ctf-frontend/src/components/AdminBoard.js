@@ -325,32 +325,14 @@ const AdminBoard = ({ cases, questions, onQuestionsChanged }) => {
     catch { showToast('Silinemedi', 'error'); }
   };
 
-  /* ── Save board card position ── */
+  /* ── Save board card position — sadece Düzeni Kaydet butonu kullanır ── */
   const saveBoardCardPosition = async (id, posX, posY) => {
-    const card = cards.find(c => c.id === id);
-    if (!card) return;
-    try {
-      await api.put('/board-cards/' + id, {
-        caseId: card.caseId, type: card.type, title: card.title, content: card.content,
-        fileUrl: card.fileUrl, externalUrl: card.externalUrl, dockerImage: card.dockerImage,
-        posX: Math.round(posX), posY: Math.round(posY), rotation: card.rotation,
-        color: card.color, unlockedByChallenge: card.unlockedByChallenge,
-      });
-    } catch {}
+    // Otomatik kaydetme devre dışı — Düzeni Kaydet butonunu kullan
   };
 
-  /* ── Save question position ── */
+  /* ── Save question position — sadece Düzeni Kaydet butonu kullanır ── */
   const saveQuestionPosition = useCallback(async (id, posX, posY) => {
-    try {
-      const res = await api.get('/challenges/' + id);
-      const q = res.data;
-      await api.put('/admin/challenges/' + id, {
-        caseId: q.caseId || parseInt(selCase), title: q.title, description: q.description || '',
-        category: q.category, order: q.order, points: q.points, flag: q.flag || '',
-        requiredChallengeId: q.requiredChallengeId, hasVM: q.hasVM, dockerImage: q.dockerImage,
-        posX: Math.round(posX), posY: Math.round(posY),
-      });
-    } catch (e) { console.error('Pozisyon kaydedilemedi', e); }
+    // Otomatik kaydetme devre dışı — Düzeni Kaydet butonunu kullan
   }, [selCase]); // eslint-disable-line
 
   /* ── Save question (modal) ── */
@@ -475,7 +457,17 @@ const AdminBoard = ({ cases, questions, onQuestionsChanged }) => {
     }
     if (!isPanning.current) return;
     boardMoved.current = true;
-    setPan({ x: e.clientX - panStart.current.x, y: e.clientY - panStart.current.y });
+    const rawX = e.clientX - panStart.current.x;
+    const rawY = e.clientY - panStart.current.y;
+    const vp = boardRef.current;
+    const vpW = vp ? vp.clientWidth  : window.innerWidth;
+    const vpH = vp ? vp.clientHeight : window.innerHeight;
+    const boardW = 4000 * scale;
+    const boardH = 3000 * scale;
+    setPan({
+      x: Math.min(100, Math.max(-(boardW - vpW + 100), rawX)),
+      y: Math.min(100, Math.max(-(boardH - vpH + 100), rawY)),
+    });
   }, [pan, scale]);
 
   const onMouseUp = useCallback(() => {
@@ -483,9 +475,22 @@ const AdminBoard = ({ cases, questions, onQuestionsChanged }) => {
       const d = dragging.current;
       dragging.current = null;
       if (d.kind === 'card') {
-        setCards(prev => { const card = prev.find(c => c.id === d.id); if (card) saveBoardCardPosition(card.id, card.posX, card.posY); return prev; });
+        // Güncel pozisyonu state'ten al ve kaydet
+        setCards(prev => {
+          const card = prev.find(c => c.id === d.id);
+          if (card) {
+            const px = Math.round(card.posX);
+            const py = Math.round(card.posY);
+            saveBoardCardPosition(card.id, px, py);
+          }
+          return prev;
+        });
       } else {
-        setQuestionPositions(prev => { const pos = prev[d.id]; if (pos) saveQuestionPosition(d.id, pos.x, pos.y); return prev; });
+        setQuestionPositions(prev => {
+          const pos = prev[d.id];
+          if (pos) saveQuestionPosition(d.id, Math.round(pos.x), Math.round(pos.y));
+          return prev;
+        });
       }
     }
     isPanning.current = false;
@@ -499,7 +504,7 @@ const AdminBoard = ({ cases, questions, onQuestionsChanged }) => {
       const xs = (e.clientX - vp.left - pan.x) / scale;
       const ys = (e.clientY - vp.top  - pan.y) / scale;
       const delta = e.deltaY > 0 ? 0.95 : 1.05;
-      const ns = Math.min(Math.max(0.3, scale * delta), 2.0);
+      const ns = Math.min(Math.max(0.35, scale * delta), 1.5);
       setPan({ x: e.clientX - vp.left - xs * ns, y: e.clientY - vp.top - ys * ns });
       setScale(ns);
     } else {
@@ -527,6 +532,45 @@ const AdminBoard = ({ cases, questions, onQuestionsChanged }) => {
   };
   const deleteSelected = () => { if (selectedCard) deleteCard(selectedCard.id); if (selectedQuestion) deleteQuestion(selectedQuestion.id); };
   const toggleConnectMode = () => { setConnectMode(m => !m); setConnectFirst(null); };
+
+  /* ── Tüm pozisyonları kaydet ── */
+  const [saving, setSaving] = useState(false);
+  const saveLayoutAll = async () => {
+    setSaving(true);
+    try {
+      // Tüm kartları kaydet
+      await Promise.all(cards.map(card =>
+        api.put('/board-cards/' + card.id, {
+          caseId: card.caseId, type: card.type, title: card.title,
+          content: card.content, fileUrl: card.fileUrl,
+          externalUrl: card.externalUrl, dockerImage: card.dockerImage,
+          posX: Math.round(card.posX), posY: Math.round(card.posY),
+          rotation: card.rotation, color: card.color,
+          unlockedByChallenge: card.unlockedByChallenge,
+        }).catch(() => {})
+      ));
+      // Tüm soruları kaydet
+      await Promise.all(caseQuestions.map(async q => {
+        const pos = questionPositions[q.id];
+        if (!pos) return;
+        try {
+          const res = await api.get('/challenges/' + q.id);
+          const qd = res.data;
+          await api.put('/admin/challenges/' + q.id, {
+            caseId: qd.caseId || parseInt(selCase), title: qd.title,
+            description: qd.description || '', category: qd.category,
+            order: qd.order, points: qd.points, flag: qd.flag || '',
+            requiredChallengeId: qd.requiredChallengeId,
+            hasVM: qd.hasVM, dockerImage: qd.dockerImage,
+            posX: Math.round(pos.x), posY: Math.round(pos.y),
+          });
+        } catch {}
+      }));
+      showToast('✅ Düzen kaydedildi!', 'success');
+    } catch {
+      showToast('Kaydetme hatası', 'error');
+    } finally { setSaving(false); }
+  };
 
   /* ══════════════════════════════════════════
      RENDER
@@ -560,6 +604,16 @@ const AdminBoard = ({ cases, questions, onQuestionsChanged }) => {
               📄 Olay Yeri Raporu
             </button>
           )}
+
+          {/* Düzeni Kaydet */}
+          <button
+            className="btn btn-primary btn-small"
+            onClick={saveLayoutAll}
+            disabled={saving}
+            style={{ marginLeft: 8, background: saving ? '#555' : 'linear-gradient(135deg,#2d7a2d,#1a4a1a)', borderColor: '#4a9a4a' }}
+          >
+            {saving ? '⏳ Kaydediliyor...' : '💾 Düzeni Kaydet'}
+          </button>
         </>)}
 
         {selItem && !connectMode && (<>
@@ -569,9 +623,9 @@ const AdminBoard = ({ cases, questions, onQuestionsChanged }) => {
         </>)}
 
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
-          <button className="adm-tool-btn" onClick={() => setScale(s => Math.min(2, s * 1.1))}>+</button>
+          <button className="adm-tool-btn" onClick={() => setScale(s => Math.min(1.5, s * 1.1))}>+</button>
           <span style={{ fontFamily: 'monospace', fontSize: 10, color: '#c9975a', padding: '4px 8px', minWidth: 40, textAlign: 'center' }}>{Math.round(scale * 100)}%</span>
-          <button className="adm-tool-btn" onClick={() => setScale(s => Math.max(0.3, s * 0.9))}>−</button>
+          <button className="adm-tool-btn" onClick={() => setScale(s => Math.max(0.35, s * 0.9))}>−</button>
           <button className="adm-tool-btn" onClick={() => { setPan({ x: 50, y: 80 }); setScale(0.85); }}>⌂</button>
         </div>
       </div>
@@ -633,8 +687,16 @@ const AdminBoard = ({ cases, questions, onQuestionsChanged }) => {
           {/* ── Board Cards (admin kartları) ── */}
           {cards.map(card => {
             const TYPE_ICONS = { note: '📝', photo: '🖼️', video: '🎥', document: '📄', terminal: '💻', website: '🌐', audio: '🎵' };
-            const isDark = ['video','terminal','website','audio'].includes(card.type);
             const TYPE_BG = { note: card.color || '#bacb9a', photo: '#f5f0e8', video: '#1a1a2e', document: '#f0ede0', terminal: '#0a0a0a', website: '#0d1117', audio: '#1a0a2e' };
+            const bg = TYPE_BG[card.type] || '#f0ede0';
+            // Arka plan renginin koyu mu açık mı olduğunu hesapla
+            const isIntrinsicDark = ['video','terminal','website','audio'].includes(card.type);
+            const isColorDark = card.type === 'note' && card.color && (() => {
+              const hex = card.color.replace('#','');
+              const r = parseInt(hex.substr(0,2),16), g = parseInt(hex.substr(2,2),16), b = parseInt(hex.substr(4,2),16);
+              return (r*299 + g*587 + b*114) / 1000 < 128;
+            })();
+            const isDark = isIntrinsicDark || isColorDark;
             const isSelected = selItem?.kind === 'card' && selItem.id === card.id;
             return (
               <div
@@ -653,9 +715,9 @@ const AdminBoard = ({ cases, questions, onQuestionsChanged }) => {
                 <div className="db-pin" />
                 {card.unlockedByChallenge && <div style={{ position: 'absolute', top: 6, left: 6, fontSize: 11, opacity: 0.6 }}>🔒</div>}
                 <div className="db-admin-card-icon">{TYPE_ICONS[card.type] || '📁'}</div>
-                <div className="db-admin-card-title" style={{ color: isDark ? '#e2e8f0' : '#1a1a1a' }}>{card.title}</div>
+                <div className="db-admin-card-title" style={{ color: isDark ? '#f0f4ff' : '#0a0500' }}>{card.title}</div>
                 {card.type === 'photo' && card.fileUrl && <img src={BASE + card.fileUrl} alt={card.title} className="db-admin-card-thumb" />}
-                {card.type === 'note' && card.content && <div className="db-admin-card-preview">{card.content.slice(0, 200)}</div>}
+                {card.type === 'note' && card.content && <div className="db-admin-card-preview" style={{ color: isDark ? '#c8d8e8' : '#1a0800' }}>{card.content.slice(0, 200)}</div>}
                 {['video','audio','document','terminal','website'].includes(card.type) && <div className="db-admin-card-hint">Tıkla → Görüntüle</div>}
               </div>
             );
@@ -735,3 +797,6 @@ const AdminBoard = ({ cases, questions, onQuestionsChanged }) => {
 };
 
 export default AdminBoard;
+
+
+

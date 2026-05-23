@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  body { background: #1e1e2e; margin: 0; font-family: -apple-system, sans-serif; color: #cdd6f4; }
+  .browser { background: #313244; border-radius: 8px; margin: 20px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+  .browser-bar { background: #45475a; padding: 10px 16px; display: flex; align-items: center; gap: 8px; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .dot.red { background: #f38ba8; }
+  .dot.yellow { background: #f9e2af; }
+  .dot.green { background: #a6e3a1; }
+  .url-bar { background: #1e1e2e; border-radius: 4px; padding: 4px 12px; flex: 1; font-size: 12px; color: #89b4fa; font-family: monospace; }
+  .history { padding: 0; }
+  .history-item { padding: 12px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 12px; cursor: pointer; transition: background 0.1s; }
+  .history-item:hover { background: rgba(255,255,255,0.05); }
+  .favicon { width: 16px; height: 16px; border-radius: 2px; background: #89b4fa; display: flex; align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0; }
+  .history-title { font-size: 13px; color: #cdd6f4; }
+  .history-url { font-size: 11px; color: #6c7086; font-family: monospace; margin-top: 2px; }
+  .history-time { font-size: 10px; color: #585b70; margin-left: auto; white-space: nowrap; }
+  .highlight-row { background: rgba(243,139,168,0.08) !important; border-left: 3px solid #f38ba8; }
+  .highlight-row .history-url { color: #f38ba8 !important; }
+  h3 { padding: 16px 20px 8px; font-size: 12px; color: #6c7086; text-transform: uppercase; letter-spacing: 1px; margin: 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+</style>
+</head>
+<body>
+<div class="browser">
+  <div class="browser-bar">
+    <div class="dot red"></div>
+    <div class="dot yellow"></div>
+    <div class="dot green"></div>
+    <div class="url-bar">chrome://history/</div>
+  </div>
+  <h3>🕐 Tarayıcı Geçmişi — Ahmet Yılmaz</h3>
+  <div class="history">
+    <div class="history-item">
+      <div class="favicon">G</div>
+      <div>
+        <div class="history-title">Gmail - Gelen Kutusu</div>
+        <div class="history-url">https://mail.google.com/mail/u/0/#inbox</div>
+      </div>
+      <div class="history-time">14 Oca, 23:58</div>
+    </div>
+    <div class="history-item">
+      <div class="favicon">T</div>
+      <div>
+        <div class="history-title">TechCorp Şirket Portalı</div>
+        <div class="history-url">http://192.168.x.x/index.html</div>
+      </div>
+      <div class="history-time">14 Oca, 23:45</div>
+    </div>
+    <div class="history-item highlight-row">
+      <div class="favicon" style="background:#f38ba8">A</div>
+      <div>
+        <div class="history-title">Admin Panel - TechCorp</div>
+        <div class="history-url">http://192.168.x.x/admin-panel/?user=admin&pass=...</div>
+      </div>
+      <div class="history-time">14 Oca, 23:41</div>
+    </div>
+    <div class="history-item highlight-row">
+      <div class="favicon" style="background:#f38ba8">B</div>
+      <div>
+        <div class="history-title">Index of /secret-backup/</div>
+        <div class="history-url">http://192.168.x.x/secret-backup/</div>
+      </div>
+      <div class="history-time">14 Oca, 23:38</div>
+    </div>
+    <div class="history-item">
+      <div class="favicon">Y</div>
+      <div>
+        <div class="history-title">YouTube</div>
+        <div class="history-url">https://www.youtube.com</div>
+      </div>
+      <div class="history-time">14 Oca, 22:10</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

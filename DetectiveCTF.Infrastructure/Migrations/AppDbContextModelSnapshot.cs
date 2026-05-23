@@ -22,6 +22,52 @@ namespace DetectiveCTF.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("DetectiveCTF.Core.Entities.ActiveInstance", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AssignedPort")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ContainerId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ContainerName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ExpiryDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("VncUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ContainerId")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ActiveInstances");
+                });
+
             modelBuilder.Entity("DetectiveCTF.Core.Entities.BoardCard", b =>
                 {
                     b.Property<int>("Id")
@@ -127,6 +173,15 @@ namespace DetectiveCTF.Infrastructure.Migrations
                     b.Property<int>("Difficulty")
                         .HasColumnType("int");
 
+                    b.Property<string>("DockerImage")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Domain")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("HasVM")
+                        .HasColumnType("bit");
+
                     b.Property<string>("ImageUrl")
                         .HasColumnType("nvarchar(max)");
 
@@ -187,10 +242,19 @@ namespace DetectiveCTF.Infrastructure.Migrations
                     b.Property<string>("Hints")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("Order")
                         .HasColumnType("int");
 
                     b.Property<int>("Points")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PosX")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PosY")
                         .HasColumnType("int");
 
                     b.Property<int?>("RequiredChallengeId")
@@ -549,6 +613,17 @@ namespace DetectiveCTF.Infrastructure.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("VMInstances");
+                });
+
+            modelBuilder.Entity("DetectiveCTF.Core.Entities.ActiveInstance", b =>
+                {
+                    b.HasOne("DetectiveCTF.Core.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("DetectiveCTF.Core.Entities.BoardCard", b =>

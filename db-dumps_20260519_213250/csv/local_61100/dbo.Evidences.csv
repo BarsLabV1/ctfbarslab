@@ -1,0 +1,4 @@
+﻿"Id","ChallengeId","Title","Type","FileUrl","Description","Metadata","Order"
+"1","1","GÃ¼venlik KamerasÄ± - Ana GiriÅŸ","video","/evidence/case1/cam1_23_00.mp4","23:00-23:30 arasÄ± ana giriÅŸ kamera kaydÄ±","{""duration"":""30:00"",""resolution"":""1920x1080"",""fps"":30}","1"
+"2","1","GÃ¼venlik KamerasÄ± - Otopark","video","/evidence/case1/cam2_23_00.mp4","23:00-23:30 arasÄ± otopark kamera kaydÄ±","{""duration"":""30:00"",""resolution"":""1280x720"",""fps"":25}","2"
+"3","2","Sistem Access Log","document","/evidence/case1/access.log","Son 24 saatin sistem eriÅŸim kayÄ±tlarÄ±","","1"

@@ -49,7 +49,7 @@ const Home = () => {
         {/* Main */}
         <div className="hero-main">
           <div className="hero-tag">// CLASSIFIED · EYES_ONLY · STATION_42</div>
-          <h1 className="hero-title">
+          <h1 className="hero-title">w
             <span className="hero-title-accent">DEDE</span>KTİF
           </h1>
           <p className="hero-subtitle">// INFILTRATION_PROTOCOL_ACTIVE</p>

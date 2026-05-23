@@ -8,7 +8,7 @@ namespace DetectiveCTF.API.Controllers.Admin;
 
 [ApiController]
 [Route("api/admin/challenges")]
-[Authorize]
+[Authorize(Roles = "Admin")]
 public class AdminChallengesController : ControllerBase
 {
     private readonly IAdminChallengeService _adminChallengeService;

@@ -49,4 +49,8 @@ services:
 
 volumes:
   db_data:
+    name: bars-kopya2_db_data
+    external: true
   uploads_data:
+    name: bars-kopya2_uploads_data
+    external: true

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Şirket Portalı — TechCorp</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #1a1a2e; color: #e0e0e0; margin: 0; }
+        .header { background: #16213e; padding: 20px 40px; border-bottom: 2px solid #0f3460; }
+        .header h1 { color: #e94560; margin: 0; }
+        .content { padding: 40px; max-width: 800px; margin: 0 auto; }
+        .card { background: #16213e; border: 1px solid #0f3460; border-radius: 8px; padding: 20px; margin: 20px 0; }
+        a { color: #e94560; }
+        .login-form input { background: #0f3460; border: 1px solid #e94560; color: #fff; padding: 8px; margin: 5px; border-radius: 4px; }
+        .login-form button { background: #e94560; color: #fff; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏢 TechCorp Şirket Portalı</h1>
+        <p>Çalışan Yönetim Sistemi v2.1</p>
+    </div>
+    <div class="content">
+        <div class="card">
+            <h2>Giriş Yap</h2>
+            <div class="login-form">
+                <input type="text" placeholder="Kullanıcı adı" id="user"><br>
+                <input type="password" placeholder="Şifre" id="pass"><br>
+                <button onclick="alert('Hatalı giriş!')">Giriş</button>
+            </div>
+        </div>
+        <div class="card">
+            <h2>Duyurular</h2>
+            <p>🔧 Sistem bakımı: Yedekleme dizini geçici olarak erişime açıktır.</p>
+            <p>📧 IT departmanı: <code>admin@techcorp.local</code></p>
+            <p>🖥️ SSH erişimi için: <code>detective</code> kullanıcısını kullanın</p>
+        </div>
+    </div>
+</body>
+</html>

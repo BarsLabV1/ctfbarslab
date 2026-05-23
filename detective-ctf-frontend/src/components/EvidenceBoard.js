@@ -158,7 +158,17 @@ const EvidenceBoard = ({ caseId, caseData, clues = [], autoItems = [], onUnlock,
       return;
     }
     if (!isPanning.current) return;
-    setPan({ x: e.clientX - panStart.current.x, y: e.clientY - panStart.current.y });
+    const rawX = e.clientX - panStart.current.x;
+    const rawY = e.clientY - panStart.current.y;
+    const vp = boardRef.current;
+    const vpW = vp ? vp.clientWidth  : window.innerWidth;
+    const vpH = vp ? vp.clientHeight : window.innerHeight;
+    const boardW = 4000 * scale;
+    const boardH = 3000 * scale;
+    setPan({
+      x: Math.min(100, Math.max(-(boardW - vpW + 100), rawX)),
+      y: Math.min(100, Math.max(-(boardH - vpH + 100), rawY)),
+    });
   }, [pan, scale]);
 
   const onMouseUp = useCallback(() => {
@@ -184,7 +194,7 @@ const EvidenceBoard = ({ caseId, caseData, clues = [], autoItems = [], onUnlock,
       const xs = (e.clientX - vp.left - pan.x) / scale;
       const ys = (e.clientY - vp.top  - pan.y) / scale;
       const delta = e.deltaY > 0 ? 0.95 : 1.05;
-      const ns = Math.min(Math.max(0.3, scale * delta), 2.0);
+      const ns = Math.min(Math.max(0.35, scale * delta), 1.5);
       setPan({ x: e.clientX - vp.left - xs * ns, y: e.clientY - vp.top - ys * ns });
       setScale(ns);
     } else {
@@ -300,9 +310,9 @@ const EvidenceBoard = ({ caseId, caseData, clues = [], autoItems = [], onUnlock,
           </button>
         )}
         <div style={{ marginLeft:'auto', display:'flex', gap:6, alignItems:'center' }}>
-          <button className="adm-tool-btn" onClick={() => setScale(s => Math.min(2, s*1.1))}>+</button>
+          <button className="adm-tool-btn" onClick={() => setScale(s => Math.min(1.5, s*1.1))}>+</button>
           <span style={{ fontFamily:'monospace', fontSize:10, color:'#c9975a', padding:'4px 8px', minWidth:40, textAlign:'center' }}>{Math.round(scale*100)}%</span>
-          <button className="adm-tool-btn" onClick={() => setScale(s => Math.max(0.3, s*0.9))}>−</button>
+          <button className="adm-tool-btn" onClick={() => setScale(s => Math.max(0.35, s*0.9))}>−</button>
           <button className="adm-tool-btn" onClick={() => { setPan({x:50,y:80}); setScale(0.85); }}>⌂</button>
         </div>
       </div>
@@ -364,7 +374,7 @@ const EvidenceBoard = ({ caseId, caseData, clues = [], autoItems = [], onUnlock,
                 cursor: connecting !== null ? 'crosshair' : 'grab',
                 outline: connecting === n.id ? '3px solid #f5c518' : undefined,
                 zIndex: connecting === n.id ? 20 : 3,
-                minWidth:180, minHeight:160, padding:'28px 16px 36px',
+                minWidth:280, minHeight:240, padding:'36px 20px 40px',
               }}
               onMouseDown={e => startDrag(e, n.id, 'note')}
               onClick={() => handleItemClick(n.id)}
@@ -478,3 +488,6 @@ const EvidenceBoard = ({ caseId, caseData, clues = [], autoItems = [], onUnlock,
 };
 
 export default EvidenceBoard;
+
+
+
